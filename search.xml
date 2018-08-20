@@ -36,6 +36,13 @@
   
     
     <entry>
+      <title>关于</title>
+      <link href="/about/index.html"/>
+      <url>/about/index.html</url>
+      <content type="html"><![CDATA[<p>大家好，我是”李乔子的酒”。欢迎来到我的个人技术博客。</p><p>我是一个Java入门2年的”小猿”,今后会在本博客写下自己的工作和生活日常.</p><p>让我们一起,变得更加优秀!</p><h4 id="历史纪录"><a href="#历史纪录" class="headerlink" title="历史纪录"></a>历史纪录</h4><table><thead><tr><th>日期</th><th>优化记录</th><th>完成日期</th><th>责任人</th></tr></thead><tbody><tr><td>2018-08-19</td><td>整理读书资源,对读书页面中的书籍增加 “百度云盘”下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>新增 “Tools”工具页面,提供日常及开发常用工具一站式下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>申请 “七牛云”存储,提供文件存储功能</td><td></td><td>lemon</td></tr></tbody></table>]]></content>
+    </entry>
+    
+    <entry>
       <title>读书</title>
       <link href="/reading/index.html"/>
       <url>/reading/index.html</url>
@@ -43,10 +50,10 @@
     </entry>
     
     <entry>
-      <title>关于</title>
-      <link href="/about/index.html"/>
-      <url>/about/index.html</url>
-      <content type="html"><![CDATA[<p>大家好，我是”李乔子的酒”。欢迎来到我的个人技术博客。</p><p>我是一个Java入门2年的”小猿”,今后会在本博客写下自己的工作和生活日常.</p><p>让我们一起,变得更加优秀!</p><h4 id="历史纪录"><a href="#历史纪录" class="headerlink" title="历史纪录"></a>历史纪录</h4><table><thead><tr><th>日期</th><th>优化记录</th><th>完成日期</th><th>责任人</th></tr></thead><tbody><tr><td>2018-08-19</td><td>整理读书资源,对读书页面中的书籍增加 “百度云盘”下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>新增 “Tools”工具页面,提供日常及开发常用工具一站式下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>申请 “七牛云”存储,提供文件存储功能</td><td></td><td>lemon</td></tr></tbody></table>]]></content>
+      <title>resources</title>
+      <link href="/resources/index.html"/>
+      <url>/resources/index.html</url>
+      <content type="html"><![CDATA[]]></content>
     </entry>
     
   
