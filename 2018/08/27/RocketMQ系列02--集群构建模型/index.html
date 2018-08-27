@@ -7,13 +7,15 @@
 
     
 
-    <title>李雪飞 文章 | 李乔子的酒</title>
+    <title>RocketMQ系列02--集群构建模型 | 李乔子的酒</title>
     <meta name="author" content="liqiaozi">
+    
+    <meta name="description" content="0.前言　　本篇主要是对 RocketMQ的集群搭建的几种方式做简单介绍及其优缺点，便于自己在项目中，根据自己的业务需要做技术选型。在上一篇中，我们介绍了RocketMQ的物理部署结构，知道了它是由NameServer、Producer、Consumer和Broker来组成，各自的作用也做了说明。而">
     
     
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-    
+    <meta property="og:title" content="RocketMQ系列02--集群构建模型"/>
     <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
 
     
@@ -49,7 +51,7 @@
                         <a class="menu-home " href="/" >
                             <i class="fa fa-home "></i>
                             
-                            Home
+                            首页
                         </a>
                     </li>
                 
@@ -57,7 +59,7 @@
                         <a class="menu-archive " href="/archives" >
                             <i class="fa fa-archive "></i>
                             
-                            Archives
+                            归档
                         </a>
                     </li>
                 
@@ -65,7 +67,7 @@
                         <a class="menu-category category-menu" href="javascript:;" data-activates="category-menu" >
                             <i class="fa fa-bookmark "></i>
                             
-                            Categories
+                            分类
                         </a>
                     </li>
                 
@@ -73,7 +75,7 @@
                         <a class="menu-reading " href="/reading" >
                             <i class="fa fa-book "></i>
                             
-                            Reading
+                            读书
                         </a>
                     </li>
                 
@@ -81,7 +83,7 @@
                         <a class="menu-reading " href="/resources" >
                             <i class="fa fa-book "></i>
                             
-                            Resources
+                            资源
                         </a>
                     </li>
                 
@@ -89,7 +91,7 @@
                         <a class="menu-about " href="/about" >
                             <i class="fa fa-user "></i>
                             
-                            About
+                            关于
                         </a>
                     </li>
                 
@@ -97,7 +99,7 @@
                         <a class="menu-search modal-trigger " href="#search" >
                             <i class="fa fa-search "></i>
                             
-                            Search
+                            搜索
                         </a>
                     </li>
                 
@@ -125,7 +127,7 @@
                 <a class="waves-effect menu-home " href="/" >
                     <i class="fa fa-home "></i>
                     
-                    Home
+                    首页
                 </a>
             </li>
         
@@ -133,7 +135,7 @@
                 <a class="waves-effect menu-archive " href="/archives" >
                     <i class="fa fa-archive "></i>
                     
-                    Archives
+                    归档
                 </a>
             </li>
         
@@ -141,7 +143,7 @@
                 <a class="waves-effect menu-category category-menu" href="javascript:;" data-activates="category-menu" >
                     <i class="fa fa-bookmark "></i>
                     
-                    Categories
+                    分类
                 </a>
             </li>
         
@@ -149,7 +151,7 @@
                 <a class="waves-effect menu-reading " href="/reading" >
                     <i class="fa fa-book "></i>
                     
-                    Reading
+                    读书
                 </a>
             </li>
         
@@ -157,7 +159,7 @@
                 <a class="waves-effect menu-reading " href="/resources" >
                     <i class="fa fa-book "></i>
                     
-                    Resources
+                    资源
                 </a>
             </li>
         
@@ -165,7 +167,7 @@
                 <a class="waves-effect menu-about " href="/about" >
                     <i class="fa fa-user "></i>
                     
-                    About
+                    关于
                 </a>
             </li>
         
@@ -173,7 +175,7 @@
                 <a class="waves-effect menu-search modal-trigger " href="#search" >
                     <i class="fa fa-search "></i>
                     
-                    Search
+                    搜索
                 </a>
             </li>
         
@@ -185,8 +187,8 @@
             
 
             <li class="collapse-level-0" collapse-level="0">
-                <a class="no-padding" href="/categories/生活/">
-                    生活 <span class="right">1</span></a>
+                <a class="no-padding" href="/categories/RocketMQ/">
+                    RocketMQ <span class="right">2 篇</span></a>
                 </a>
             </li>
 
@@ -203,7 +205,7 @@
     <div class="row">
         <div class="input-field col s12">
               <input id="search-input" type="text">
-              <label for="search-input">Search</label>
+              <label for="search-input">搜索</label>
         </div>
 
     </div>
@@ -215,30 +217,129 @@
 
     <main>
         <div class="container main-container">
-    
-
-<nav class="page-nav hide-on-small-only">
+    <nav class="page-nav hide-on-small-only">
     <div class="nav-wrapper indigo">
-        <span class="breadcrumb">Current page(Tags)</span>
+        <span class="breadcrumb">当前位置（分类目录）</span>
         
+            
+    
+    
+    <a class="breadcrumb" href="/categories/RocketMQ/">RocketMQ</a>
+
 
         
-            <a class="breadcrumb" href="/tags/李雪飞-文章/">李雪飞 文章</a>
+
         
     </div>
 </nav>
 
+<article>
+    <div class="card">
+        <div class="card-content">
+            
+
+            <div class="article-title">
+                
+    
+        <h1>RocketMQ系列02--集群构建模型</h1>
+    
 
 
-    <div class="collection mt-0">
+            </div>
+            <time class="pink-link-context" datetime="2018-08-26T16:00:00.000Z"><a href="/2018/08/27/RocketMQ系列02--集群构建模型/">2018-08-27</a></time>
+
+            <span id="busuanzi_container_page_pv" class="read-times-container">
+    <i class="fa fa-eye"></i>
+    <span id="busuanzi_value_page_pv"></span>
+</span>
+
+            
+    <div class="tags-row">
         
-            <a href="/2018/08/18/2018-08-18-李雪飞的测试文章/" class="collection-item grey-text text-darken-1">
-                <time datetime="2018-08-17T16:00:00.000Z">2018-08-18</time>
-                <span>&nbsp;&nbsp;&nbsp;</span>
-                李雪飞的测试文章
-            </a>
+            <a href="/tags/rocketmq-集群/" class="chip pink lighten-1">rocketmq ; 集群</a>
         
     </div>
+
+
+            <div class="toc pink-link-context hide-on-med-and-down">
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#0-前言"><span class="section table-of-contents-text">0.前言</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-单-Master"><span class="section table-of-contents-text">1.单 Master</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-多-Master-模式"><span class="section table-of-contents-text">2.多 Master 模式</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-多-Master-多-Slave-模式，异步复制"><span class="section table-of-contents-text">3.多 Master 多 Slave 模式，异步复制</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-多-Master-多-Slave-模式，同步双写"><span class="section table-of-contents-text">4.多 Master 多 Slave 模式，同步双写</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#参考"><span class="section table-of-contents-text">参考</span></a></li></ol>
+</div>
+
+
+            <div class="entry pink-link-context">
+                <h1 id="0-前言"><a href="#0-前言" class="headerlink" title="0.前言"></a>0.前言</h1><p>　　本篇主要是对 RocketMQ的集群搭建的几种方式做简单介绍及其优缺点，便于自己在项目中，根据自己的业务需要做技术选型。在上一篇中，我们介绍了RocketMQ的物理部署结构，知道了它是由NameServer、Producer、Consumer和Broker来组成，各自的作用也做了说明。而这篇介绍的集群的搭建，这里的“集群”指的就是 Broker集群的搭建。</p>
+<p>　　Broker 分为 Master 和 Slave，一个 Master 可以对应多个 Slave，但是一个 Slave 只能对应一个 Master，Master 和 Slave 的对应关系通过指定相同的 BrokerName，不同的 BrokerId 来定义，BrokerId为 0 表示 Master，非 0 表示 Slave。Master 也可以部署多个。</p>
+<p>​　　推荐的几种 Broker 集群部署方式，这里的 Slave 不可写，但可读，类似于 Mysql 主备方式。</p>
+<h1 id="1-单-Master"><a href="#1-单-Master" class="headerlink" title="1.单 Master"></a>1.单 Master</h1><blockquote>
+<p>　　即系统所有的消息都存储在一个 Broker上，这种方式风险较大，一旦 Broker 重启或者宕机时，会导致整个服务不可用。这种只适合入门helloworld实例，强烈不建议线上环境使用。</p>
+</blockquote>
+<h1 id="2-多-Master-模式"><a href="#2-多-Master-模式" class="headerlink" title="2.多 Master 模式"></a>2.多 Master 模式</h1><blockquote>
+<p>​    一个集群无Slave，全是Master，例如2个Master或者3个Master。</p>
+</blockquote>
+<p><strong>优点</strong></p>
+<blockquote>
+<p>​　　配置简单，单个Master宕机或重启维护对应用无影响，在磁盘配置为RAID10时，即使机器宕机不可恢复情况下，由于RAID10磁盘非常可靠，消息也不会丢（异步刷盘丢失少量消息，同步刷盘一条不丢）。性能最高。</p>
+</blockquote>
+<p><strong>缺点</strong></p>
+<blockquote>
+<p>​    单台机器宕机期间，这台机器上未被消费的消息在机器恢复之前不可订阅，消息实时性会受到受到影响。</p>
+</blockquote>
+<p>　　这里介绍下【异步刷盘】、【同步刷盘】、【Broker间数据同步/复制】。</p>
+<p>【异步刷盘】：ASYNC_FLUSH,生产者发送的每一条消息并不是立即保存到磁盘,而是暂时缓存起来,然后就返回生产者成功。然后再异步的将缓存数据保存到磁盘，这里有2种情况：</p>
+<pre><code>1.定期将缓存种更新的数据进行刷盘；
+2.当缓存中更新的数据条数达到某一设定值进行刷盘。
+</code></pre><p>这种方式会存在消息丢失（场景：在还未来得及同步到磁盘的时候宕机），但是性能很好，rokectmq默认是这种模式。</p>
+<p>【同步刷盘】：生产者发送的每一条消息都在保存到磁盘成功后才返回告诉生产者成功。这种方式不会存在消息丢失的问题，但是有很大的磁盘IO开销，性能有一定影响。</p>
+<p>【Broker Replication】:Broker间数据同步/复制。集群环境下需要部署多个Broker，Broker分2种角色：Master和Slave。</p>
+<pre><code>1.一种是master,Master即可以读，也可以写，设置brokerId=0,只能设置一个。
+2.另外一种是slave,只允许读，其brokerId为非0。
+</code></pre><p>　　一个master与多个slave通过指定相同的brokerName被归为一个 broker set（broker集群）。通常生产环境中，我们至少需要2个broker Set。Broker Replication指的就是slave 获取或者复制master的数据。</p>
+<pre><code>1.sync Broker: 生产者发送的每一条消息都至少同步复制到一个slave后才返回告诉生产者成功，即&quot;同步双写&quot;；
+2.Async Broker: 生产者发送的每一条消息只要写入master就返回告诉生产者成功，然后再&quot;异步复制&quot;到slave.
+</code></pre><h1 id="3-多-Master-多-Slave-模式，异步复制"><a href="#3-多-Master-多-Slave-模式，异步复制" class="headerlink" title="3.多 Master 多 Slave 模式，异步复制"></a>3.多 Master 多 Slave 模式，异步复制</h1><blockquote>
+<p>每个Master配置一个或多个Slave，有多对Master-Slave，HA采用异步复制方式，主备有短暂消息延迟，毫秒级。</p>
+</blockquote>
+<p><strong>优点</strong></p>
+<blockquote>
+<p>　　即使磁盘损坏，消息丢失的非常少，且消息实时性不会受影响，因为Master宕机后，消费者仍然可以从Slave消费，此过程对应用透明。不需要人工干预。性能同多Master模式几乎一样。</p>
+</blockquote>
+<p><strong>缺点</strong></p>
+<blockquote>
+<p>　　Master宕机，磁盘损坏情况，会丢失少量消息。当producer向master发送完数据时，这时候还没等到master向slave做同步，master宕机了，则在master上的数据会丢失，消费者在salve上消费不到刚刚的消息。</p>
+</blockquote>
+<h1 id="4-多-Master-多-Slave-模式，同步双写"><a href="#4-多-Master-多-Slave-模式，同步双写" class="headerlink" title="4.多 Master 多 Slave 模式，同步双写"></a>4.多 Master 多 Slave 模式，同步双写</h1><blockquote>
+<p>每个Master配置一个或多个Slave，有多对Master-Slave，HA采用同步双写方式，主备都写成功，向应用返回成功。</p>
+</blockquote>
+<p><strong>优点</strong></p>
+<blockquote>
+<p>数据与服务都无单点，Master宕机情况下，消息无延迟，服务可用性与数据可用性都非常高。</p>
+</blockquote>
+<p><strong>缺点</strong></p>
+<blockquote>
+<p> 　　性能比异步复制模式略低，大约低10%左右，发送单个消息的RT会略高。目前主宕机后，备机不能自动切换为主机，后续会支持自动切换功能。</p>
+</blockquote>
+<p>在下篇中，我们会进行 2-master集群环境的搭建和配置。</p>
+<h1 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h1><p>1.《RocketMQ用户指南》</p>
+
+                
+<p class="pink-link-context">
+    <a href="/2018/08/27/RocketMQ系列01--简介及概念/" rel="next" title="RocketMQ系列01--简介及概念">
+    上一篇：RocketMQ系列01--简介及概念
+  </a>
+</p>
+
+
+
+
+            </div>
+			
+        </div>
+    </div>
+</article>
+
+
+
+
 
 
 </div>
@@ -248,8 +349,8 @@
       <i class="fa fa-caret-square-o-up"></i>
     </a>
     <ul>
-      <li><a class="btn-return-top btn-floating waves-effect green" title="Return to top"><i class="fa fa-arrow-circle-o-up"></i></a></li>
-      <li><a class="btn-floating waves-effect button-collapse yellow darken-1"  data-activates="main-menu" title="Menu"><i class="fa fa-navicon"></i></a></li>
+      <li><a class="btn-return-top btn-floating waves-effect green" title="回到顶部"><i class="fa fa-arrow-circle-o-up"></i></a></li>
+      <li><a class="btn-floating waves-effect button-collapse yellow darken-1"  data-activates="main-menu" title="菜单"><i class="fa fa-navicon"></i></a></li>
     </ul>
   </div>
 
@@ -260,7 +361,7 @@
         <div class="row">
             
             <div class="social-group col m4 s12">
-                <h5 class="white-text">Social</h5>
+                <h5 class="white-text">社交</h5>
                 
                     <a class="social-link" href="https://weibo.com/u/3187854180" target="_blank">
                         <i class="fa fa-2x fa-weibo"></i>
@@ -295,7 +396,7 @@
 
             
             <div class="col m8 s12">
-                <h5 class="white-text">Links</h5>
+                <h5 class="white-text">友情链接</h5>
                 
                     <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">李乔子的酒(简书)</a>
                 
@@ -310,7 +411,7 @@
     <div class="footer-copyright pink-link-context">
         <div class="container">
             © 2018 liqiaozi.club, All rights reserved.
-            <p class="right" style="margin-top: 0;">Blog powered by <a href="https://hexo.io">Hexo</a> </p>
+            <p class="right" style="margin-top: 0;">本博客由 <a href="https://hexo.io">Hexo</a> </p>
         </div>
     </div>
 </footer>
