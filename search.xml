@@ -43,16 +43,16 @@
     </entry>
     
     <entry>
-      <title>读书</title>
-      <link href="/reading/index.html"/>
-      <url>/reading/index.html</url>
+      <title>resources</title>
+      <link href="/resources/index.html"/>
+      <url>/resources/index.html</url>
       <content type="html"><![CDATA[]]></content>
     </entry>
     
     <entry>
-      <title>resources</title>
-      <link href="/resources/index.html"/>
-      <url>/resources/index.html</url>
+      <title>读书</title>
+      <link href="/reading/index.html"/>
+      <url>/reading/index.html</url>
       <content type="html"><![CDATA[]]></content>
     </entry>
     
