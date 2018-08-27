@@ -3,27 +3,6 @@
   
     
     <entry>
-      <title>RocketMQ系列02--双主模式集群搭建(2m-noslave)</title>
-      <link href="/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9703--%E5%8F%8C%E4%B8%BB%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/"/>
-      <url>/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9703--%E5%8F%8C%E4%B8%BB%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
-      <content type="html"><![CDATA[<h1 id="0-前言"><a href="#0-前言" class="headerlink" title="0.前言"></a>0.前言</h1><p>　　在上一篇中,我们介绍了 rocketmq 的支持的集群方式,并且介绍了各自的优缺点。本次以多Master集群模式为例搭建一个双机Master的RocketMQ集群环境（<strong>2m-noslave</strong>集群模式）。</p><h1 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1.环境准备"></a>1.环境准备</h1><p>　　因为rocketmq底层是 Java 语言编写，所以搭建此环境的服务器，必须已经安装和配置了 JDK。</p><h2 id="1-1-工具下载"><a href="#1-1-工具下载" class="headerlink" title="　  1.1 工具下载"></a>　  1.1 工具下载</h2><p>　　这里，我提供了本次安装rocketmq所用到的工具包。分别是：<br><img src="https://note.youdao.com/yws/public/resource/bb13fe8da08ed6f3d4eac0318734b976/xmlnote/E929F5CED76743B3BB6D93B211DD28C9/3039" alt=""></p><p>提供了<a href="https://pan.baidu.com/s/1N4QrAgNrdwi3PacqqwxYUg#list/path=%2F%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%B7%A5%E5%85%B7%E5%8C%85%2Frocketmq-software&amp;parentPath=%2F%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%B7%A5%E5%85%B7%E5%8C%85" title="rocketmq安装包" target="_blank" rel="noopener">百度云盘</a>（密码：wdvm）。大家可自行下载。</p><h2 id="1-2-服务器规划"><a href="#1-2-服务器规划" class="headerlink" title="　  1.2 服务器规划"></a>　  1.2 服务器规划</h2><table><thead><tr><th style="text-align:center">序号</th><th style="text-align:center">IP</th><th style="text-align:center">角色</th><th style="text-align:center">模式</th></tr></thead><tbody><tr><td style="text-align:center">1</td><td style="text-align:center">192.168.81.132</td><td style="text-align:center">nameServer1,brokerServer1</td><td style="text-align:center">Master1</td></tr><tr><td style="text-align:center">2</td><td style="text-align:center">192.168.81.132</td><td style="text-align:center">nameServer2,brokerServer2</td><td style="text-align:center">Master2</td></tr></tbody></table><h2 id="1-3-基础环境搭建"><a href="#1-3-基础环境搭建" class="headerlink" title="　  1.3 基础环境搭建"></a>　  1.3 基础环境搭建</h2><ol><li>将压缩包上传到2台机器;</li><li>安装和配置JDK;(参考 <a href="https://blog.csdn.net/o135248/article/details/79931693" target="_blank" rel="noopener">linux下JDK的安装</a>)</li></ol><h1 id="2-集群搭建"><a href="#2-集群搭建" class="headerlink" title="2.集群搭建　"></a>2.集群搭建　</h1><h2 id="2-1-Hosts-添加信息"><a href="#2-1-Hosts-添加信息" class="headerlink" title="　  2.1 Hosts 添加信息"></a>　  2.1 Hosts 添加信息</h2><p>这里为了方便我们将 nameserver 和 broker 配置到了一台机器上,可以分开进行配置.</p><h2 id="2-2-解压压缩包-2台机器"><a href="#2-2-解压压缩包-2台机器" class="headerlink" title="　  2.2 解压压缩包(2台机器)"></a>　  2.2 解压压缩包(2台机器)</h2><h2 id="2-3-创建存储路径-2台机器"><a href="#2-3-创建存储路径-2台机器" class="headerlink" title="　  2.3 创建存储路径(2台机器)"></a>　  2.3 创建存储路径(2台机器)</h2><h2 id="2-4-RocketMQ配置文件-2台机器"><a href="#2-4-RocketMQ配置文件-2台机器" class="headerlink" title="　  2.4 RocketMQ配置文件(2台机器)"></a>　  2.4 RocketMQ配置文件(2台机器)</h2><h2 id="2-5-修改日志配置文件-2台机器"><a href="#2-5-修改日志配置文件-2台机器" class="headerlink" title="　  2.5 修改日志配置文件(2台机器)"></a>　  2.5 修改日志配置文件(2台机器)</h2><h2 id="2-6-修改启动脚本参数-2台机器"><a href="#2-6-修改启动脚本参数-2台机器" class="headerlink" title="　  2.6 修改启动脚本参数(2台机器)"></a>　  2.6 修改启动脚本参数(2台机器)</h2><h2 id="2-7-启动NameServer-2台机器"><a href="#2-7-启动NameServer-2台机器" class="headerlink" title="　  2.7 启动NameServer(2台机器)"></a>　  2.7 启动NameServer(2台机器)</h2><h2 id="2-8-启动BrokerServer-A"><a href="#2-8-启动BrokerServer-A" class="headerlink" title="　  2.8 启动BrokerServer A"></a>　  2.8 启动BrokerServer A</h2><h2 id="2-9-启动BrokerServer-B"><a href="#2-9-启动BrokerServer-B" class="headerlink" title="　  2.9 启动BrokerServer B"></a>　  2.9 启动BrokerServer B</h2><h2 id="2-10-安装-RocketMq-Console"><a href="#2-10-安装-RocketMq-Console" class="headerlink" title="　  2.10 安装 RocketMq Console"></a>　  2.10 安装 RocketMq Console</h2><h2 id="2-11-数据清理"><a href="#2-11-数据清理" class="headerlink" title="　  2.11 数据清理"></a>　  2.11 数据清理</h2>]]></content>
-      
-      <categories>
-          
-          <category> RocketMQ </category>
-          
-      </categories>
-      
-      
-        <tags>
-            
-            <tag> rocketmq   集群  2m-noslave </tag>
-            
-        </tags>
-      
-    </entry>
-    
-    <entry>
       <title>RocketMQ系列01--简介及概念</title>
       <link href="/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9701--%E7%AE%80%E4%BB%8B%E5%8F%8A%E6%A6%82%E5%BF%B5/"/>
       <url>/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9701--%E7%AE%80%E4%BB%8B%E5%8F%8A%E6%A6%82%E5%BF%B5/</url>
@@ -65,8 +44,36 @@
       
     </entry>
     
+    <entry>
+      <title>RocketMQ系列03--双主模式集群搭建(2m-noslave)</title>
+      <link href="/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9703--%E5%8F%8C%E4%B8%BB%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/"/>
+      <url>/2018/08/27/RocketMQ%E7%B3%BB%E5%88%9703--%E5%8F%8C%E4%B8%BB%E6%A8%A1%E5%BC%8F%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/</url>
+      <content type="html"><![CDATA[<h1 id="0-前言"><a href="#0-前言" class="headerlink" title="0.前言"></a>0.前言</h1><p>　　在上一篇中,我们介绍了 rocketmq 的支持的集群方式,并且介绍了各自的优缺点。本次以多Master集群模式为例搭建一个双机Master的RocketMQ集群环境（<strong>2m-noslave</strong>集群模式）。</p><h1 id="1-环境准备"><a href="#1-环境准备" class="headerlink" title="1.环境准备"></a>1.环境准备</h1><p>　　因为rocketmq底层是 Java 语言编写，所以搭建此环境的服务器，必须已经安装和配置了 JDK。</p><h2 id="1-1-工具下载"><a href="#1-1-工具下载" class="headerlink" title="　  1.1 工具下载"></a>　  1.1 工具下载</h2><p>　　这里，我提供了本次安装rocketmq所用到的工具包。分别是：<br><img src="https://note.youdao.com/yws/public/resource/bb13fe8da08ed6f3d4eac0318734b976/xmlnote/E929F5CED76743B3BB6D93B211DD28C9/3039" alt=""></p><p>提供了<a href="https://pan.baidu.com/s/1N4QrAgNrdwi3PacqqwxYUg#list/path=%2F%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%B7%A5%E5%85%B7%E5%8C%85%2Frocketmq-software&amp;parentPath=%2F%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%B7%A5%E5%85%B7%E5%8C%85" title="rocketmq安装包" target="_blank" rel="noopener">百度云盘</a>（密码：wdvm）。大家可自行下载。</p><h2 id="1-2-服务器规划"><a href="#1-2-服务器规划" class="headerlink" title="　  1.2 服务器规划"></a>　  1.2 服务器规划</h2><table><thead><tr><th style="text-align:center">序号</th><th style="text-align:center">IP</th><th style="text-align:center">角色</th><th style="text-align:center">模式</th></tr></thead><tbody><tr><td style="text-align:center">1</td><td style="text-align:center">192.168.81.132</td><td style="text-align:center">nameServer1,brokerServer1</td><td style="text-align:center">Master1</td></tr><tr><td style="text-align:center">2</td><td style="text-align:center">192.168.81.132</td><td style="text-align:center">nameServer2,brokerServer2</td><td style="text-align:center">Master2</td></tr></tbody></table><h2 id="1-3-基础环境搭建"><a href="#1-3-基础环境搭建" class="headerlink" title="　  1.3 基础环境搭建"></a>　  1.3 基础环境搭建</h2><ol><li>将压缩包上传到2台机器;</li><li>安装和配置JDK;(参考 <a href="https://blog.csdn.net/o135248/article/details/79931693" target="_blank" rel="noopener">linux下JDK的安装</a>)</li></ol><h1 id="2-集群搭建"><a href="#2-集群搭建" class="headerlink" title="2.集群搭建　"></a>2.集群搭建　</h1><h2 id="2-1-Hosts-添加信息"><a href="#2-1-Hosts-添加信息" class="headerlink" title="　  2.1 Hosts 添加信息"></a>　  2.1 Hosts 添加信息</h2><p>这里为了方便我们将 nameserver 和 broker 配置到了一台机器上,可以分开进行配置.</p><h2 id="2-2-解压压缩包-2台机器"><a href="#2-2-解压压缩包-2台机器" class="headerlink" title="　  2.2 解压压缩包(2台机器)"></a>　  2.2 解压压缩包(2台机器)</h2><h2 id="2-3-创建存储路径-2台机器"><a href="#2-3-创建存储路径-2台机器" class="headerlink" title="　  2.3 创建存储路径(2台机器)"></a>　  2.3 创建存储路径(2台机器)</h2><h2 id="2-4-RocketMQ配置文件-2台机器"><a href="#2-4-RocketMQ配置文件-2台机器" class="headerlink" title="　  2.4 RocketMQ配置文件(2台机器)"></a>　  2.4 RocketMQ配置文件(2台机器)</h2><h2 id="2-5-修改日志配置文件-2台机器"><a href="#2-5-修改日志配置文件-2台机器" class="headerlink" title="　  2.5 修改日志配置文件(2台机器)"></a>　  2.5 修改日志配置文件(2台机器)</h2><h2 id="2-6-修改启动脚本参数-2台机器"><a href="#2-6-修改启动脚本参数-2台机器" class="headerlink" title="　  2.6 修改启动脚本参数(2台机器)"></a>　  2.6 修改启动脚本参数(2台机器)</h2><h2 id="2-7-启动NameServer-2台机器"><a href="#2-7-启动NameServer-2台机器" class="headerlink" title="　  2.7 启动NameServer(2台机器)"></a>　  2.7 启动NameServer(2台机器)</h2><h2 id="2-8-启动BrokerServer-A"><a href="#2-8-启动BrokerServer-A" class="headerlink" title="　  2.8 启动BrokerServer A"></a>　  2.8 启动BrokerServer A</h2><h2 id="2-9-启动BrokerServer-B"><a href="#2-9-启动BrokerServer-B" class="headerlink" title="　  2.9 启动BrokerServer B"></a>　  2.9 启动BrokerServer B</h2><h2 id="2-10-安装-RocketMq-Console"><a href="#2-10-安装-RocketMq-Console" class="headerlink" title="　  2.10 安装 RocketMq Console"></a>　  2.10 安装 RocketMq Console</h2><h2 id="2-11-数据清理"><a href="#2-11-数据清理" class="headerlink" title="　  2.11 数据清理"></a>　  2.11 数据清理</h2>]]></content>
+      
+      <categories>
+          
+          <category> RocketMQ </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> rocketmq   集群  2m-noslave </tag>
+            
+        </tags>
+      
+    </entry>
+    
   
   
+    
+    <entry>
+      <title>关于</title>
+      <link href="/about/index.html"/>
+      <url>/about/index.html</url>
+      <content type="html"><![CDATA[<p>大家好，我是”李乔子的酒”。欢迎来到我的个人技术博客。</p><p>我是一个Java入门2年的”小猿”,今后会在本博客写下自己的工作和生活日常.</p><p>让我们一起,变得更加优秀!</p><h4 id="历史纪录"><a href="#历史纪录" class="headerlink" title="历史纪录"></a>历史纪录</h4><table><thead><tr><th>日期</th><th>优化记录</th><th>完成日期</th><th>责任人</th></tr></thead><tbody><tr><td>2018-08-19</td><td>整理读书资源,对读书页面中的书籍增加 “百度云盘”下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>新增 “Tools”工具页面,提供日常及开发常用工具一站式下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>申请 “七牛云”存储,提供文件存储功能</td><td></td><td>lemon</td></tr></tbody></table>]]></content>
+    </entry>
     
     <entry>
       <title>resources</title>
@@ -80,13 +87,6 @@
       <link href="/reading/index.html"/>
       <url>/reading/index.html</url>
       <content type="html"><![CDATA[]]></content>
-    </entry>
-    
-    <entry>
-      <title>关于</title>
-      <link href="/about/index.html"/>
-      <url>/about/index.html</url>
-      <content type="html"><![CDATA[<p>大家好，我是”李乔子的酒”。欢迎来到我的个人技术博客。</p><p>我是一个Java入门2年的”小猿”,今后会在本博客写下自己的工作和生活日常.</p><p>让我们一起,变得更加优秀!</p><h4 id="历史纪录"><a href="#历史纪录" class="headerlink" title="历史纪录"></a>历史纪录</h4><table><thead><tr><th>日期</th><th>优化记录</th><th>完成日期</th><th>责任人</th></tr></thead><tbody><tr><td>2018-08-19</td><td>整理读书资源,对读书页面中的书籍增加 “百度云盘”下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>新增 “Tools”工具页面,提供日常及开发常用工具一站式下载</td><td></td><td>lemon</td></tr><tr><td>2018-08-19</td><td>申请 “七牛云”存储,提供文件存储功能</td><td></td><td>lemon</td></tr></tbody></table>]]></content>
     </entry>
     
   
