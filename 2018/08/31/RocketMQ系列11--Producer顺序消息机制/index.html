@@ -1,0 +1,672 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    
+
+    <title>RocketMQ系列11--Producer 顺序消息 | 李乔子的酒</title>
+    <meta name="author" content="liqiaozi">
+    
+    <meta name="description" content="0.前言顺序消息（FIFO消息）是MQ提供的一种严格按照顺序进行发布和消费的消息类型。顺序消息指消息发布和消息消费都按照顺序进行。
+
+顺序发布: 对于指定的一个Topic,客户端将按照一定的先后顺序发送消息；
+顺序消费: 对于指定的一个Topic,按照一定的先后顺序接收消息，即先发送的消息一定会被消">
+    
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta property="og:title" content="RocketMQ系列11--Producer 顺序消息"/>
+    <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
+
+    
+    <meta property="og:image" content=""/>
+    
+
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="alternate" href="/atom.xml" title="Liqiaozi&#39;Blog" type="application/atom+xml">
+    <link rel="stylesheet" href="/css/lib/materialize.min.css">
+    <link rel="stylesheet" href="/css/lib/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+
+    
+        <link rel="stylesheet" href="/css/lib/prettify-tomorrow-night-eighties.css" type="text/css">
+    
+    <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+</head>
+
+
+<body>
+    <img src="/weixin_favicon.png" style="position: absolute; left: -9999px; opacity: 0; filter: alpha(opacity=0);">
+
+    <nav class="indigo">
+    <div class="nav-wrapper">
+        <a href="#" data-activates="main-menu" class="button-collapse">
+            <i class="fa fa-navicon"></i>
+        </a>
+        <div class="">
+            <a href="/" class="brand-logo hide-on-med-and-down">Liqiaozi&#39;Blog</a>
+            <ul class="right hide-on-med-and-down">
+                
+                    <li>
+                        <a class="menu-home " href="/" >
+                            <i class="fa fa-home "></i>
+                            
+                            首页
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-archive " href="/archives" >
+                            <i class="fa fa-archive "></i>
+                            
+                            归档
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                            <i class="fa fa-bookmark "></i>
+                            
+                            分类
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/reading" >
+                            <i class="fa fa-book "></i>
+                            
+                            读书
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/resources" >
+                            <i class="fa fa-book "></i>
+                            
+                            资源
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-about " href="/about" >
+                            <i class="fa fa-user "></i>
+                            
+                            关于
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-search modal-trigger " href="#search" >
+                            <i class="fa fa-search "></i>
+                            
+                            搜索
+                        </a>
+                    </li>
+                
+            </ul>
+            <div>
+    <ul class="side-nav indigo darken-1" id="main-menu">
+        
+        <li class="side-user">
+            <div class="row">
+                <div class="col s4 no-padding">
+                    <img class="avatar-image circle responsive-img" src="http://p3.music.126.net/_2CmjbuNTmbnlEhHqOG7Pw==/18923694626218379.jpg?param=300y300" alt="User Avatar">
+                </div>
+                <div class="info col s8 valign-wrapper no-padding">
+                    <div class="valign">
+                        <p class="name">李乔子的酒</p>
+                        <p class="desc">Web服务端 SpringBoot SpringCloud</p>
+                    </div>
+                </div>
+            </div>
+        </li>
+        
+
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-home " href="/" >
+                    <i class="fa fa-home "></i>
+                    
+                    首页
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-archive " href="/archives" >
+                    <i class="fa fa-archive "></i>
+                    
+                    归档
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                    <i class="fa fa-bookmark "></i>
+                    
+                    分类
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/reading" >
+                    <i class="fa fa-book "></i>
+                    
+                    读书
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/resources" >
+                    <i class="fa fa-book "></i>
+                    
+                    资源
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-about " href="/about" >
+                    <i class="fa fa-user "></i>
+                    
+                    关于
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-search modal-trigger " href="#search" >
+                    <i class="fa fa-search "></i>
+                    
+                    搜索
+                </a>
+            </li>
+        
+    </ul>
+
+    <ul class="side-nav indigo darken-1" id="category-menu">
+    
+
+            
+
+            <li class="collapse-level-0" collapse-level="0">
+                <a class="no-padding" href="/categories/RocketMQ/">
+                    RocketMQ <span class="right">8 篇</span></a>
+                </a>
+            </li>
+
+        
+
+    </ul>
+</div>
+
+        </div>
+    </div>
+</nav>
+
+<div id="search" class="modal search-modal">
+    <div class="row">
+        <div class="input-field col s12">
+              <input id="search-input" type="text">
+              <label for="search-input">搜索</label>
+        </div>
+
+    </div>
+    <div id="search-result" class="search-result col s12">
+
+    </div>
+</div>
+
+
+    <main>
+        <div class="container main-container">
+    <nav class="page-nav hide-on-small-only">
+    <div class="nav-wrapper indigo">
+        <span class="breadcrumb">当前位置（分类目录）</span>
+        
+            
+    
+    
+    <a class="breadcrumb" href="/categories/RocketMQ/">RocketMQ</a>
+
+
+        
+
+        
+    </div>
+</nav>
+
+<article>
+    <div class="card">
+        <div class="card-content">
+            
+
+            <div class="article-title">
+                
+    
+        <h1>RocketMQ系列11--Producer 顺序消息</h1>
+    
+
+
+            </div>
+            <time class="pink-link-context" datetime="2018-08-30T16:00:00.000Z"><a href="/2018/08/31/RocketMQ系列11--Producer顺序消息机制/">2018-08-31</a></time>
+
+            <span id="busuanzi_container_page_pv" class="read-times-container">
+    <i class="fa fa-eye"></i>
+    <span id="busuanzi_value_page_pv"></span>
+</span>
+
+            
+    <div class="tags-row">
+        
+            <a href="/tags/rocketmq/" class="chip pink lighten-1">rocketmq</a>
+        
+            <a href="/tags/Producer/" class="chip pink lighten-1">Producer</a>
+        
+            <a href="/tags/顺序消息/" class="chip pink lighten-1">顺序消息</a>
+        
+    </div>
+
+
+            <div class="toc pink-link-context hide-on-med-and-down">
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#0-前言"><span class="section table-of-contents-text">0.前言</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-RocketMQ的顺序消息的实现"><span class="section table-of-contents-text">1.RocketMQ的顺序消息的实现</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-Producer实现"><span class="section table-of-contents-text">2.Producer实现</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-Consumer实现"><span class="section table-of-contents-text">3.Consumer实现</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-结果"><span class="section table-of-contents-text">4.结果</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#5-Producer发送顺序消息过程"><span class="section table-of-contents-text">5.Producer发送顺序消息过程</span></a><ol class="section table-of-contents-child"><li class="section table-of-contents-item section table-of-contents-level-2"><a class="section table-of-contents-link" href="#5-1MessageQueueSelector"><span class="section table-of-contents-text">5.1MessageQueueSelector</span></a></li><li class="section table-of-contents-item section table-of-contents-level-2"><a class="section table-of-contents-link" href="#5-2-顺序消息发送"><span class="section table-of-contents-text">5.2 顺序消息发送</span></a></li><li class="section table-of-contents-item section table-of-contents-level-2"><a class="section table-of-contents-link" href="#5-3-consumer端接收"><span class="section table-of-contents-text">5.3 consumer端接收</span></a></li></ol></li></ol>
+</div>
+
+
+            <div class="entry pink-link-context">
+                <h1 id="0-前言"><a href="#0-前言" class="headerlink" title="0.前言"></a>0.前言</h1><p>顺序消息（FIFO消息）是MQ提供的一种严格按照顺序进行发布和消费的消息类型。顺序消息指消息发布和消息消费都按照顺序进行。</p>
+<ul>
+<li>顺序发布: 对于指定的一个Topic,客户端将按照一定的先后顺序发送消息；</li>
+<li>顺序消费: 对于指定的一个Topic,按照一定的先后顺序接收消息，即先发送的消息一定会被消费段先接受到并处理。</li>
+</ul>
+<p>　　例如：一笔订单产生了3条消息，分别是：订单创建、订单付款、订单完成。消费时，要按照顺序一次消费才有意义。于此同时多笔订单之间又是可以并行消费的。</p>
+<p><strong>全局顺序</strong></p>
+<p>对于指定的一个Topic,所有的消息按照严格的先入先出（FIFO）的顺序进行发布和消费。</p>
+<p><img src="http://docs-aliyun.cn-hangzhou.oss.aliyun-inc.com/assets/pic/49319/cn_zh/1534917028902/%E5%85%A8%E5%B1%80%E9%A1%BA%E5%BA%8F.png" alt=""></p>
+<p>请参考 阿里的《<a href="https://help.aliyun.com/document_detail/49319.html?spm=a2c4g.11186623.4.6.6a0a292dCAyla4" target="_blank" rel="noopener">顺序消息</a>》说明。</p>
+<h1 id="1-RocketMQ的顺序消息的实现"><a href="#1-RocketMQ的顺序消息的实现" class="headerlink" title="1.RocketMQ的顺序消息的实现"></a>1.RocketMQ的顺序消息的实现</h1><p>　　顺序消息主要是指局部顺序，即生产者通过将某一类消息发送至同一个队列来实现。与发生普通消息相比，在发送顺序消息时要对同一类型的消息选择同一个队列，即同一个　<strong>MessageQueue</strong>　对象。 目前RocketMQ定义了选择MessageQueue对象的接口MessageQueueSelector，里面有方法select(final List mqs, final Message msg, final Object arg)，并且RocketMQ默认实现了提供了两个实现类SelectMessageQueueByHash和SelectMessageQueueByRandoom，即根据arg参数通过Hash或者随机方式选择MessageQueue对象。 为了业务层根据业务需要能自定义选择规则，也可以在业务层自定义选择规则，然后调用DefaultMQProducer.send(Message msg, MessageQueueSelector selector, Object arg)方法完成顺序消息的方式。 </p>
+<p>　　消息发布是有序的含义：producer发送消息应该是依次发送的，所以要求发送消息的时候保证：</p>
+<ul>
+<li>消息不能异步发送，同步发送的时候才能保证broker收到是有序的。</li>
+<li>每次发送选择的是同一个MessageQueue</li>
+</ul>
+<h1 id="2-Producer实现"><a href="#2-Producer实现" class="headerlink" title="2.Producer实现"></a>2.Producer实现</h1><p>　　参考网上的例子，编写如下的producer发送顺序消息。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br></pre></td><td class="code"><pre><span class="line">public class Producer &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws UnsupportedEncodingException, RemotingException, MQClientException, MQBrokerException &#123;</span><br><span class="line">        try &#123;</span><br><span class="line">            //设置 producerGroup 名称</span><br><span class="line">            DefaultMQProducer producer = new DefaultMQProducer(&quot;Order_Producer_Group&quot;);</span><br><span class="line">            //设置 nameserver地址.</span><br><span class="line">            producer.setNamesrvAddr(&quot;192.168.81.132:9876;192.168.81.134:9876&quot;);</span><br><span class="line">            producer.start();</span><br><span class="line"></span><br><span class="line">            // 订单创建 订单支付 订单完成</span><br><span class="line">            String[] tags = new String[] &#123;&quot;TagA&quot;, &quot;TagB&quot;, &quot;TagC&quot;&#125;;</span><br><span class="line"></span><br><span class="line">            List&lt;Order&gt; orders = buildOrders();</span><br><span class="line">            for(int i = 0; i &lt; orders.size(); i++)&#123;</span><br><span class="line">                String body = &quot;Hello Rocket&quot; + orders.get(i);</span><br><span class="line">                long orderId = orders.get(i).getOrderId();</span><br><span class="line"></span><br><span class="line">                Message message = new Message(&quot;Topic_Order&quot;,</span><br><span class="line">                        tags[i % tags.length],</span><br><span class="line">                        &quot;KEY&quot; + i,</span><br><span class="line">                        body.getBytes());</span><br><span class="line"></span><br><span class="line">                SendResult sendResult = producer.send(message, new SelectMessageQueueByHash(), orderId);</span><br><span class="line">                System.out.println(&quot;content=&quot; + body + &quot;. sendResult = &quot; + sendResult);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            producer.shutdown();</span><br><span class="line">        &#125; catch (MQClientException | RemotingException | MQBrokerException | InterruptedException e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; // end main.</span><br><span class="line"></span><br><span class="line">    /**</span><br><span class="line">     * 生成模拟订单数据</span><br><span class="line">     */</span><br><span class="line">    private static List&lt;Order&gt; buildOrders() &#123;</span><br><span class="line">        List&lt;Order&gt; orderList = new ArrayList&lt;Order&gt;();</span><br><span class="line"></span><br><span class="line">        Order orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111039L);</span><br><span class="line">        orderDemo.setDesc(&quot;创建&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111065L);</span><br><span class="line">        orderDemo.setDesc(&quot;创建&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111039L);</span><br><span class="line">        orderDemo.setDesc(&quot;付款&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103117235L);</span><br><span class="line">        orderDemo.setDesc(&quot;创建&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111065L);</span><br><span class="line">        orderDemo.setDesc(&quot;付款&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103117235L);</span><br><span class="line">        orderDemo.setDesc(&quot;付款&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111065L);</span><br><span class="line">        orderDemo.setDesc(&quot;完成&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111039L);</span><br><span class="line">        orderDemo.setDesc(&quot;推送&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103117235L);</span><br><span class="line">        orderDemo.setDesc(&quot;完成&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        orderDemo = new Order();</span><br><span class="line">        orderDemo.setOrderId(15103111039L);</span><br><span class="line">        orderDemo.setDesc(&quot;完成&quot;);</span><br><span class="line">        orderList.add(orderDemo);</span><br><span class="line"></span><br><span class="line">        return orderList;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">@Data</span><br><span class="line">class Order&#123;</span><br><span class="line">    private long orderId;</span><br><span class="line"></span><br><span class="line">    private String desc;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<h1 id="3-Consumer实现"><a href="#3-Consumer实现" class="headerlink" title="3.Consumer实现"></a>3.Consumer实现</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line">public class Consumer &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws MQClientException &#123;</span><br><span class="line">        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(&quot;Order_Consumer_Group&quot;);</span><br><span class="line">        consumer.setNamesrvAddr(&quot;192.168.81.132:9876;192.168.81.134:9876&quot;);</span><br><span class="line">        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);</span><br><span class="line"></span><br><span class="line">        consumer.subscribe(&quot;Topic_Order&quot;, &quot;*&quot;);</span><br><span class="line"></span><br><span class="line">        consumer.registerMessageListener(new MessageListenerOrderly() &#123;</span><br><span class="line">            Random random = new Random();</span><br><span class="line">            @Override</span><br><span class="line">            public ConsumeOrderlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeOrderlyContext context) &#123;</span><br><span class="line">                context.setAutoCommit(true);</span><br><span class="line">                System.out.print(Thread.currentThread().getName() + &quot; Receive New Messages: &quot; );</span><br><span class="line">                for (MessageExt msg: msgs) &#123;</span><br><span class="line">                    System.out.println(msg + &quot;, content:&quot; + new String(msg.getBody()));</span><br><span class="line">                &#125;</span><br><span class="line">                try &#123;</span><br><span class="line">                    //模拟业务逻辑处理中...</span><br><span class="line">                    TimeUnit.SECONDS.sleep(random.nextInt(10));</span><br><span class="line">                &#125; catch (Exception e) &#123;</span><br><span class="line">                    e.printStackTrace();</span><br><span class="line">                &#125;</span><br><span class="line">                return ConsumeOrderlyStatus.SUCCESS;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        consumer.start();</span><br><span class="line">        System.out.printf(&quot;Consumer Started.%n&quot;);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<h1 id="4-结果"><a href="#4-结果" class="headerlink" title="4.结果"></a>4.结果</h1><p><strong>producer端发送的消息</strong>：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">content=Hello RocketOrder(orderId=15103111039, desc=创建). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A62E, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=0], queueOffset=0]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111065, desc=创建). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A6E5, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=2], queueOffset=0]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111039, desc=付款). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A79C, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=0], queueOffset=1]</span><br><span class="line">content=Hello RocketOrder(orderId=15103117235, desc=创建). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518400002A9F0000000000033BBC, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-a, queueId=0], queueOffset=0]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111065, desc=付款). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A853, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=2], queueOffset=1]</span><br><span class="line">content=Hello RocketOrder(orderId=15103117235, desc=付款). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518400002A9F0000000000033C73, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-a, queueId=0], queueOffset=1]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111065, desc=完成). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A90A, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=2], queueOffset=2]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111039, desc=推送). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002A9C1, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=0], queueOffset=2]</span><br><span class="line">content=Hello RocketOrder(orderId=15103117235, desc=完成). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518400002A9F0000000000033D2A, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-a, queueId=0], queueOffset=2]</span><br><span class="line">content=Hello RocketOrder(orderId=15103111039, desc=完成). sendResult = SendResult [sendStatus=SEND_OK, msgId=C0A8518600002A9F000000000002AA78, messageQueue=MessageQueue [topic=Topic_Order, brokerName=broker-b, queueId=0], queueOffset=3]</span><br></pre></td></tr></table></figure>
+<p><strong>consumer端消费消息</strong></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">ConsumeMessageThread_4 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=0, sysFlag=0, bornTimestamp=1535694773214, bornHost=/192.168.81.1:61621, storeTimestamp=1535723526505, storeHost=/192.168.81.132:10911, msgId=C0A8518400002A9F0000000000033BBC, commitLogOffset=211900, bodyCRC=1826716009, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY3, WAIT=true, TAGS=TagA&#125;, body=51]], content:Hello RocketOrder(orderId=15103117235, desc=创建)</span><br><span class="line">ConsumeMessageThread_5 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=0, sysFlag=0, bornTimestamp=1535694772791, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553085, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A62E, commitLogOffset=173614, bodyCRC=1934949583, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=4, KEYS=KEY0, WAIT=true, TAGS=TagA&#125;, body=51]], content:Hello RocketOrder(orderId=15103111039, desc=创建)</span><br><span class="line">ConsumeMessageThread_6 Receive New Messages: MessageExt [queueId=2, storeSize=183, queueOffset=0, sysFlag=0, bornTimestamp=1535694773081, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553244, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A6E5, commitLogOffset=173797, bodyCRC=1291356221, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY1, WAIT=true, TAGS=TagB&#125;, body=51]], content:Hello RocketOrder(orderId=15103111065, desc=创建)</span><br><span class="line">ConsumeMessageThread_6 Receive New Messages: MessageExt [queueId=2, storeSize=183, queueOffset=1, sysFlag=0, bornTimestamp=1535694773360, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553455, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A853, commitLogOffset=174163, bodyCRC=1081168709, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY4, WAIT=true, TAGS=TagB&#125;, body=51]], content:Hello RocketOrder(orderId=15103111065, desc=付款)</span><br><span class="line">ConsumeMessageThread_4 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=1, sysFlag=0, bornTimestamp=1535694773369, bornHost=/192.168.81.1:61621, storeTimestamp=1535723526572, storeHost=/192.168.81.132:10911, msgId=C0A8518400002A9F0000000000033C73, commitLogOffset=212083, bodyCRC=1617469969, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY5, WAIT=true, TAGS=TagC&#125;, body=51]], content:Hello RocketOrder(orderId=15103117235, desc=付款)</span><br><span class="line">ConsumeMessageThread_5 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=1, sysFlag=0, bornTimestamp=1535694773157, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553299, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A79C, commitLogOffset=173980, bodyCRC=2145200055, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=4, KEYS=KEY2, WAIT=true, TAGS=TagC&#125;, body=51]], content:Hello RocketOrder(orderId=15103111039, desc=付款)</span><br><span class="line">ConsumeMessageThread_6 Receive New Messages: MessageExt [queueId=2, storeSize=183, queueOffset=2, sysFlag=0, bornTimestamp=1535694773377, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553489, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A90A, commitLogOffset=174346, bodyCRC=339615115, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY6, WAIT=true, TAGS=TagA&#125;, body=51]], content:Hello RocketOrder(orderId=15103111065, desc=完成)</span><br><span class="line">ConsumeMessageThread_5 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=2, sysFlag=0, bornTimestamp=1535694773404, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553494, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002A9C1, commitLogOffset=174529, bodyCRC=742301160, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=4, KEYS=KEY7, WAIT=true, TAGS=TagB&#125;, body=51]], content:Hello RocketOrder(orderId=15103111039, desc=推送)</span><br><span class="line">ConsumeMessageThread_4 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=2, sysFlag=0, bornTimestamp=1535694773411, bornHost=/192.168.81.1:61621, storeTimestamp=1535723526623, storeHost=/192.168.81.132:10911, msgId=C0A8518400002A9F0000000000033D2A, commitLogOffset=212266, bodyCRC=875031775, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=3, KEYS=KEY8, WAIT=true, TAGS=TagC&#125;, body=51]], content:Hello RocketOrder(orderId=15103117235, desc=完成)</span><br><span class="line">ConsumeMessageThread_5 Receive New Messages: MessageExt [queueId=0, storeSize=183, queueOffset=3, sysFlag=0, bornTimestamp=1535694773426, bornHost=/192.168.81.1:61618, storeTimestamp=1535723553517, storeHost=/192.168.81.134:10911, msgId=C0A8518600002A9F000000000002AA78, commitLogOffset=174712, bodyCRC=731015545, reconsumeTimes=0, preparedTransactionOffset=0, toString()=Message [topic=Topic_Order, flag=0, properties=&#123;MIN_OFFSET=0, MAX_OFFSET=4, KEYS=KEY9, WAIT=true, TAGS=TagA&#125;, body=51]], content:Hello RocketOrder(orderId=15103111039, desc=完成)</span><br></pre></td></tr></table></figure>
+<h1 id="5-Producer发送顺序消息过程"><a href="#5-Producer发送顺序消息过程" class="headerlink" title="5.Producer发送顺序消息过程"></a>5.Producer发送顺序消息过程</h1><p>　　上面我们已经说过，要保证消息是顺序消息，在发送顺序消息时要对同一类型的消息选择同一个队列，即同一个　<strong>MessageQueue</strong>　对象。<br>　　在这里，我们要保证的是同一订单的消息要投放到同一个队列中，所以我们根据订单号去hash运算，一样的订单号得到的hash值可定是相同的，只要保证其队列的个数是不变的，则同一订单号的消息会被放到同一个队列中。</p>
+<p>之前发送普通消息时，我们调用：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public SendResult send(Message msg)</span><br></pre></td></tr></table></figure></p>
+<p>但发送顺序消息时，由于我们要把同一特征的消息放到同一队列中，所以我们使用：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">public SendResult send(Message msg, MessageQueueSelector selector, Object arg)</span><br></pre></td></tr></table></figure>
+<p>根据传入的arg值，选择路由到同一个队列中。</p>
+<h2 id="5-1MessageQueueSelector"><a href="#5-1MessageQueueSelector" class="headerlink" title="5.1MessageQueueSelector"></a>5.1MessageQueueSelector</h2><p>第二个参数 MessageQueueSelector 是一个接口，rocketmq默认提供了3种实现。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">public interface MessageQueueSelector &#123;</span><br><span class="line">    MessageQueue select(List&lt;MessageQueue&gt; var1, Message var2, Object var3);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><img src="https://upload-images.jianshu.io/upload_images/11560519-b735612943499713.png" alt=""></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> *  发送消息，随机选择队列</span><br><span class="line"> */</span><br><span class="line">public class SelectMessageQueueByRandom implements MessageQueueSelector &#123;</span><br><span class="line">    private Random random = new Random(System.currentTimeMillis());</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public MessageQueue select(List&lt;MessageQueue&gt; mqs, Message msg, Object arg) &#123;</span><br><span class="line">        int value = random.nextInt(mqs.size());</span><br><span class="line">        return mqs.get(value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>随机选择，也就是谁也不知道它到底会选择谁，这种效率其实很差，没有负载均衡，谁也不知道会不会堵塞起来，谁也不知道某个队列是否已经塞满</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 使用哈希算法来选择队列，顺序消息推荐该实现.</span><br><span class="line"> */</span><br><span class="line">public class SelectMessageQueueByHash implements MessageQueueSelector &#123;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public MessageQueue select(List&lt;MessageQueue&gt; mqs, Message msg, Object arg) &#123;</span><br><span class="line">        int value = arg.hashCode();</span><br><span class="line">        if (value &lt; 0) &#123;</span><br><span class="line">            value = Math.abs(value);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        value = value % mqs.size();</span><br><span class="line">        return mqs.get(value);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>我们每个传递进入的对象都会被哈希算法计算出 一个哈希值，比如我们传递的是订单号，那么无疑我们可以保证相同的订单号可以传递给相同的topic去处理，那么只要再保证是一致的tag就可以保证顺序的一致性啦</p>
+</blockquote>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * 根据机房来选择发往哪个队列，支付宝逻辑机房使用</span><br><span class="line"> */</span><br><span class="line">public class SelectMessageQueueByMachineRoom implements MessageQueueSelector &#123;</span><br><span class="line">    private Set&lt;String&gt; consumeridcs;</span><br><span class="line"></span><br><span class="line">    @Override</span><br><span class="line">    public MessageQueue select(List&lt;MessageQueue&gt; mqs, Message msg, Object arg) &#123;</span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public Set&lt;String&gt; getConsumeridcs() &#123;</span><br><span class="line">        return consumeridcs;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    public void setConsumeridcs(Set&lt;String&gt; consumeridcs) &#123;</span><br><span class="line">        this.consumeridcs = consumeridcs;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>机房选择，算法是木有啦，应该是根据ip地址去区分。</p>
+</blockquote>
+<p>　　同理，我们在使用时可以根据自己的业务需要来选择合适的方案，也可以自定义：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">SendResult sendResult = producer.send(msg, new MessageQueueSelector() &#123;</span><br><span class="line">                    @Override</span><br><span class="line">                    public MessageQueue select(List&lt;MessageQueue&gt; mqs, Message msg, Object arg) &#123;</span><br><span class="line">                        Integer id = (Integer) arg;</span><br><span class="line">                        int index = id % mqs.size();</span><br><span class="line">                        return mqs.get(index);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;, arg);</span><br></pre></td></tr></table></figure>
+<h2 id="5-2-顺序消息发送"><a href="#5-2-顺序消息发送" class="headerlink" title="5.2 顺序消息发送"></a>5.2 顺序消息发送</h2><p>底层调用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">private SendResult sendSelectImpl(</span><br><span class="line">       Message msg,</span><br><span class="line">       MessageQueueSelector selector,</span><br><span class="line">       Object arg,</span><br><span class="line">       final CommunicationMode communicationMode,</span><br><span class="line">       final SendCallback sendCallback, final long timeout</span><br><span class="line">   )</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line">private SendResult sendSelectImpl(</span><br><span class="line">       Message msg,</span><br><span class="line">       MessageQueueSelector selector,</span><br><span class="line">       Object arg,</span><br><span class="line">       final CommunicationMode communicationMode,</span><br><span class="line">       final SendCallback sendCallback, final long timeout</span><br><span class="line">   ) throws MQClientException, RemotingException, MQBrokerException, InterruptedException &#123;</span><br><span class="line">       // 确定producer的状态时Running.</span><br><span class="line">       long beginStartTime = System.currentTimeMillis();</span><br><span class="line">       this.makeSureStateOK();</span><br><span class="line">       // 校验message的格式.</span><br><span class="line">       Validators.checkMessage(msg, this.defaultMQProducer);</span><br><span class="line"></span><br><span class="line">       // 找到topic的路由信息,否则抛出异常.</span><br><span class="line">       TopicPublishInfo topicPublishInfo = this.tryToFindTopicPublishInfo(msg.getTopic());</span><br><span class="line">       if (topicPublishInfo != null &amp;&amp; topicPublishInfo.ok()) &#123;</span><br><span class="line">           </span><br><span class="line">           MessageQueue mq = null;</span><br><span class="line">           try &#123;</span><br><span class="line">               // 路由到消息要发送的消息队列.</span><br><span class="line">               mq = selector.select(topicPublishInfo.getMessageQueueList(), msg, arg);</span><br><span class="line">           &#125; catch (Throwable e) &#123;</span><br><span class="line">               throw new MQClientException(&quot;select message queue throwed exception.&quot;, e);</span><br><span class="line">           &#125;</span><br><span class="line"></span><br><span class="line">           // 判断是否超时.</span><br><span class="line">           long costTime = System.currentTimeMillis() - beginStartTime;</span><br><span class="line">           if (timeout &lt; costTime) &#123;</span><br><span class="line">               throw new RemotingTooMuchRequestException(&quot;sendSelectImpl call timeout&quot;);</span><br><span class="line">           &#125;</span><br><span class="line">           // 如果找到了要发送的消息队列,则发送该消息,否则跑相互异常信息.</span><br><span class="line">           if (mq != null) &#123;</span><br><span class="line">               return this.sendKernelImpl(msg, mq, communicationMode, sendCallback, null, timeout - costTime);</span><br><span class="line">           &#125; else &#123;</span><br><span class="line">               throw new MQClientException(&quot;select message queue return null.&quot;, null);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       throw new MQClientException(&quot;No route info for this topic, &quot; + msg.getTopic(), null);</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">private TopicPublishInfo tryToFindTopicPublishInfo(final String topic) &#123;</span><br><span class="line">        //  private final ConcurrentMap&lt;String, TopicPublishInfo&gt; topicPublishInfoTable = new ConcurrentHashMap&lt;String, TopicPublishInfo&gt;();</span><br><span class="line">        TopicPublishInfo topicPublishInfo = this.topicPublishInfoTable.get(topic);</span><br><span class="line">        </span><br><span class="line">        // 如果 topic的路由信息查询不到,或者该topic的消息队列还未初始化好,则创建该topic路由</span><br><span class="line">        // 并更新到namesrv上.</span><br><span class="line">        if (null == topicPublishInfo || !topicPublishInfo.ok()) &#123;</span><br><span class="line">            this.topicPublishInfoTable.putIfAbsent(topic, new TopicPublishInfo());</span><br><span class="line">            this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic);</span><br><span class="line">            topicPublishInfo = this.topicPublishInfoTable.get(topic);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        if (topicPublishInfo.isHaveTopicRouterInfo() || topicPublishInfo.ok()) &#123;</span><br><span class="line">            return topicPublishInfo;</span><br><span class="line">        &#125; else &#123;</span><br><span class="line">            this.mQClientFactory.updateTopicRouteInfoFromNameServer(topic, true, this.defaultMQProducer);</span><br><span class="line">            topicPublishInfo = this.topicPublishInfoTable.get(topic);</span><br><span class="line">            return topicPublishInfo;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h2 id="5-3-consumer端接收"><a href="#5-3-consumer端接收" class="headerlink" title="5.3 consumer端接收"></a>5.3 consumer端接收</h2><p>　　普通消息consumer注册的监听器是： MessageListenerConcurrently：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public void registerMessageListener(MessageListenerConcurrently messageListener) &#123;</span><br><span class="line">        this.messageListener = messageListener;</span><br><span class="line">        this.defaultMQPushConsumerImpl.registerMessageListener(messageListener);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<p>　　而顺序消息consumer注册的监听器时是 MessageListenerOrderly：</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">public void registerMessageListener(MessageListenerOrderly messageListener) &#123;</span><br><span class="line">        this.messageListener = messageListener;</span><br><span class="line">        this.defaultMQPushConsumerImpl.registerMessageListener(messageListener);</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">public enum ConsumeOrderlyStatus &#123;</span><br><span class="line">    /**</span><br><span class="line">     * Success consumption</span><br><span class="line">     */</span><br><span class="line">    SUCCESS,</span><br><span class="line">    /**</span><br><span class="line">     * Rollback consumption(only for binlog consumption)</span><br><span class="line">     */</span><br><span class="line">    @Deprecated</span><br><span class="line">    ROLLBACK,</span><br><span class="line">    /**</span><br><span class="line">     * Commit offset(only for binlog consumption)</span><br><span class="line">     */</span><br><span class="line">    @Deprecated</span><br><span class="line">    COMMIT,</span><br><span class="line">    /**</span><br><span class="line">     * Suspend current queue a moment</span><br><span class="line">     */</span><br><span class="line">    SUSPEND_CURRENT_QUEUE_A_MOMENT;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>　　本地消费的事务控制，</p>
+<ul>
+<li>ConsumeOrderlyStatus.SUCCESS（提交）</li>
+<li>ConsumeOrderlyStatus.SUSPEND_CURRENT_QUEUE_A_MOMENT（挂起一会再消费）</li>
+</ul>
+<p>　<br>　　在此之前还有一个变量ConsumeOrderlyContext context的setAutoCommit()是否自动提交。</p>
+<p>　　当SUSPEND_CURRENT_QUEUE_A_MOMENT时，autoCommit设置为true或者false没有区别，本质跟消费相反，把消息从msgTreeMapTemp转移回msgTreeMap，等待下次消费。</p>
+<p>当SUCCESS时，autoCommit设置为true时比设置为false多做了2个动作，</p>
+<pre><code># 本质是删除msgTreeMapTemp里的消息，msgTreeMapTemp里的消息在上面消费时从msgTreeMap转移过来的
+consumeRequest.getProcessQueue().commit()
+# 本质是把拉消息的偏移量更新到本地，然后定时更新到broker
+this.defaultMQPushConsumerImpl.getOffsetStore().updateOffset(consumeRequest.getMessageQueue(), commitOffset, false);
+</code></pre><p>　　那么少了这2个动作会怎么样呢，随着消息的消费进行，msgTreeMapTemp里的消息堆积越来越多，消费消息的偏移量一直没有更新到broker导致consumer每次重新启动后都要从头开始重复消费。所以 autoCommit建议设置为true.</p>
+<p>　　好的，本篇顺序消息主要介绍了 顺序消息的发送、消费、以及与普通消息的不同。下篇将介绍 事务消息的发送。</p>
+
+                
+
+
+<p class="pink-link-context">
+    <a href="/2018/08/31/RocketMQ系列10--Producer介绍/" rel="next" title="RocketMQ系列10--Producer介绍">
+    下一篇：RocketMQ系列10--Producer介绍
+  </a>
+</p>
+
+
+            </div>
+			
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+</div>
+
+        <div class="fixed-action-btn float-sitemap">
+    <a class="btn-floating btn-large pink">
+      <i class="fa fa-caret-square-o-up"></i>
+    </a>
+    <ul>
+      <li><a class="btn-return-top btn-floating waves-effect green" title="回到顶部"><i class="fa fa-arrow-circle-o-up"></i></a></li>
+      <li><a class="btn-floating waves-effect button-collapse yellow darken-1"  data-activates="main-menu" title="菜单"><i class="fa fa-navicon"></i></a></li>
+    </ul>
+  </div>
+
+    </main>
+    <footer class="page-footer indigo darken-1">
+    
+    <div class="footer-container container">
+        <div class="row">
+            
+            <div class="social-group col m4 s12">
+                <h5 class="white-text">社交</h5>
+                
+                    <a class="social-link" href="https://weibo.com/u/3187854180" target="_blank">
+                        <i class="fa fa-2x fa-weibo"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://github.com/liqiaozi" target="_blank">
+                        <i class="fa fa-2x fa-github"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">
+                        <i class="fa fa-2x fa-rss"></i>
+                    </a>
+                
+                
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+    </script>
+    <div class="site-visitors-container white-text">
+        <span>
+            <i class="fa fa-user"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+        </span>
+        <span>&nbsp;|&nbsp;</span>
+        <span>
+            <i class="fa fa-eye"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+        </span>
+    </div>
+
+
+            </div>
+            
+
+            
+            <div class="col m8 s12">
+                <h5 class="white-text">友情链接</h5>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">李乔子的酒(简书)</a>
+                
+                    <a class="social-link" href="https://blog.csdn.net/o135248" target="_blank">小李探花(CSDN)</a>
+                
+            </div>
+            
+        </div>
+    </div>
+    
+
+    <div class="footer-copyright pink-link-context">
+        <div class="container">
+            © 2018 liqiaozi.club, All rights reserved.
+            <p class="right" style="margin-top: 0;">本博客由 <a href="https://hexo.io">Hexo</a> </p>
+        </div>
+    </div>
+</footer>
+
+
+    <noscript>
+    <div class="noscript">
+        <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+    </div>
+</noscript>
+<div class="noscript">
+    <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+</div>
+
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/materialize.min.js"></script>
+
+<script>
+    (function($) {
+        $(document).ready(function() {
+            // 隐藏禁用javascript（针对微信内置浏览器）的提示
+            $('.noscript').hide();
+
+            // 图片缩放效果
+            var $imgs = $('img').not('.slider-image').not('.avatar-image').not('.carousel-image').not('.card-cover-image').not('.qrcode');
+
+            // 给图片加上点击放大效果（materialbox插件）
+            $imgs.addClass('materialboxed').each(function(i, el) {
+                $(this).attr('data-caption', $(this).attr('alt') || ' ');
+            }).materialbox();
+
+            // 优化表格的显示
+            $('table').each(function() {
+                var $table = $(this);
+                // 除去多行代码的情况
+                if ($table.find('pre').length == 0) {
+                    $table.addClass('responsive-table striped bordered');
+                }
+            });
+
+            // 首页幻灯片
+            $('.slider').slider({indicators: true, full_width: true, interval: 8000});
+
+            $(".button-collapse").sideNav();
+            $(".category-menu").sideNav();
+
+            // 针对gallery post
+            $('.carousel').carousel({full_width: true});
+            $('.carousel-control.prev').click(function() {
+                $('.carousel').carousel('prev');
+            });
+            $('.carousel-control.next').click(function() {
+                $('.carousel').carousel('next');
+            });
+
+            // 文章目录
+            $('article').not('.simple-article').find('h1').add('h2').add('h3').add('h4').add('h5').add('h6').scrollSpy();
+
+            // 目录随屏幕滚动（防止目录过长越过footer）
+            var $toc = $('.toc');
+            var scrollTargetTop = 0;
+            $(window).scroll(function() {
+                var $activeLink = $toc.find('a.active.section');
+                if ($(window).scrollTop() < 100) {
+                    scrollTargetTop = 0;
+                } else {
+                    if ($activeLink[0]) {
+                        scrollTargetTop = $activeLink.offset().top - $toc.offset().top;
+                    }
+                }
+                $toc.css('top', '-' + scrollTargetTop + 'px');
+            });
+
+            // 修正文章目录的left-border颜色
+            var color = $('.table-of-contents-text').css('color');
+            $('.table-of-contents-link').css('border-left-color', color);
+
+            // 针对移动端做的优化：FAB按钮点击一下收回
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                $('.fixed-action-btn').addClass('click-to-toggle');
+            }
+            // 回到顶部
+            $('.btn-return-top').click(function() {
+                $('body, html').animate({
+                    scrollTop: 0
+                }, 500);
+            });
+
+            // 重置读书页面的Tab标签页的颜色
+            $('li.tab a').hover(function() {
+                $(this).toggleClass('text-lighten-4');
+            });
+            $('.indicator').addClass('pink lighten-2');
+
+            
+            // 添加new标签
+            $('.menu-reading, .menu-about').append('<span class="new badge pink"></span>');
+            
+
+            // 搜索功能
+            $('.modal-trigger').leanModal({
+                // 打开搜索框时自动聚焦
+                ready: function() {
+                    if ($('#search').is(":visible")) {
+                        $('#search-input').focus();
+                    }
+                }
+            });
+            var searchXml = "search.xml";
+            if (searchXml.length == 0) {
+             	searchXml = "search.xml";
+            }
+            var searchPath = "/" + searchXml;
+            initSearch(searchPath, 'search-input', 'search-result');
+        });
+
+        // 初始化搜索与匹配函数
+        var initSearch = function(path, search_id, content_id) {
+            'use strict';
+            $.ajax({
+                url: path,
+                dataType: "xml",
+                success: function(xmlResponse) {
+                    // get the contents from search data
+                    var datas = $("entry", xmlResponse).map(function() {
+                        return {
+                            title: $("title", this).text(),
+                            content: $("content", this).text(),
+                            url: $("url", this).text()
+                        };
+                    }).get();
+                    var $input = document.getElementById(search_id);
+                    var $resultContent = document.getElementById(content_id);
+                    $input.addEventListener('input', function() {
+                        var str = '<ul class=\"search-result-list\">';
+                        var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                        $resultContent.innerHTML = "";
+                        if (this.value.trim().length <= 0) {
+                            return;
+                        }
+                        // perform local searching
+                        datas.forEach(function(data) {
+                            var isMatch = true;
+                            var content_index = [];
+                            var data_title = data.title.trim().toLowerCase();
+                            var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                            var data_url = data.url;
+                            var index_title = -1;
+                            var index_content = -1;
+                            var first_occur = -1;
+                            // only match artiles with not empty titles and contents
+                            if (data_title != '' && data_content != '') {
+                                keywords.forEach(function(keyword, i) {
+                                    index_title = data_title.indexOf(keyword);
+                                    index_content = data_content.indexOf(keyword);
+                                    if (index_title < 0 && index_content < 0) {
+                                        isMatch = false;
+                                    } else {
+                                        if (index_content < 0) {
+                                            index_content = 0;
+                                        }
+                                        if (i == 0) {
+                                            first_occur = index_content;
+                                        }
+                                    }
+                                });
+                            }
+                            // show search results
+                            if (isMatch) {
+                                keywords.forEach(function(keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    data_title = data_title.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                });
+
+                                str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                                var content = data.content.trim().replace(/<[^>]+>/g, "");
+                                if (first_occur >= 0) {
+                                    // cut out 100 characters
+                                    var start = first_occur - 20;
+                                    var end = first_occur + 80;
+                                    if (start < 0) {
+                                        start = 0;
+                                    }
+                                    if (start == 0) {
+                                        end = 100;
+                                    }
+                                    if (end > content.length) {
+                                        end = content.length;
+                                    }
+                                    var match_content = content.substring(start, end);
+                                    // highlight all keywords
+                                    keywords.forEach(function(keyword) {
+                                        var regS = new RegExp(keyword, "gi");
+                                        match_content = match_content.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                    });
+
+                                    str += "<p class=\"search-result\">..." + match_content + "...</p>"
+                                }
+                                str += "</li>";
+                            }
+                        });
+                        str += "</ul>";
+                        $resultContent.innerHTML = str;
+                    });
+                }
+            });
+        }
+    })(jQuery);
+</script>
+
+
+<script src="/js/prettify.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("pre").addClass("prettyprint");
+        prettyPrint();
+    });
+</script>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+});
+</script>
+<script type="text/javascript" async
+  src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+
+</body>
+</html>
