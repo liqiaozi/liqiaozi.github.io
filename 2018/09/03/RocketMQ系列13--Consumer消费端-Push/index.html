@@ -1,0 +1,618 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    
+
+    <title>RocketMQ系列13--Consumer消费端-Push | 李乔子的酒</title>
+    <meta name="author" content="liqiaozi">
+    
+    <meta name="description" content="0.概述任何消息中间件,消费者端一般有2种方式从消息中间件获取消息并消费:
+Push方式:由消息中间件(MQ消息服务器代理)主动将消息推送给消费者。采用Push方式，可以尽可能的实时将消息发送给消费者进行消费。但是，当你的消费者消费消息的能力比较弱的时候，但是MQ仍然会不断的向消费者push最新的消">
+    
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta property="og:title" content="RocketMQ系列13--Consumer消费端-Push"/>
+    <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
+
+    
+    <meta property="og:image" content=""/>
+    
+
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="alternate" href="/atom.xml" title="Liqiaozi&#39;Blog" type="application/atom+xml">
+    <link rel="stylesheet" href="/css/lib/materialize.min.css">
+    <link rel="stylesheet" href="/css/lib/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+
+    
+        <link rel="stylesheet" href="/css/lib/prettify-tomorrow-night-eighties.css" type="text/css">
+    
+    <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+</head>
+
+
+<body>
+    <img src="/weixin_favicon.png" style="position: absolute; left: -9999px; opacity: 0; filter: alpha(opacity=0);">
+
+    <nav class="indigo">
+    <div class="nav-wrapper">
+        <a href="#" data-activates="main-menu" class="button-collapse">
+            <i class="fa fa-navicon"></i>
+        </a>
+        <div class="">
+            <a href="/" class="brand-logo hide-on-med-and-down">Liqiaozi&#39;Blog</a>
+            <ul class="right hide-on-med-and-down">
+                
+                    <li>
+                        <a class="menu-home " href="/" >
+                            <i class="fa fa-home "></i>
+                            
+                            首页
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-archive " href="/archives" >
+                            <i class="fa fa-archive "></i>
+                            
+                            归档
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                            <i class="fa fa-bookmark "></i>
+                            
+                            分类
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/reading" >
+                            <i class="fa fa-book "></i>
+                            
+                            读书
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/resources" >
+                            <i class="fa fa-book "></i>
+                            
+                            资源
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-about " href="/about" >
+                            <i class="fa fa-user "></i>
+                            
+                            关于
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-search modal-trigger " href="#search" >
+                            <i class="fa fa-search "></i>
+                            
+                            搜索
+                        </a>
+                    </li>
+                
+            </ul>
+            <div>
+    <ul class="side-nav indigo darken-1" id="main-menu">
+        
+        <li class="side-user">
+            <div class="row">
+                <div class="col s4 no-padding">
+                    <img class="avatar-image circle responsive-img" src="http://p3.music.126.net/_2CmjbuNTmbnlEhHqOG7Pw==/18923694626218379.jpg?param=300y300" alt="User Avatar">
+                </div>
+                <div class="info col s8 valign-wrapper no-padding">
+                    <div class="valign">
+                        <p class="name">李乔子的酒</p>
+                        <p class="desc">Web服务端 SpringBoot SpringCloud</p>
+                    </div>
+                </div>
+            </div>
+        </li>
+        
+
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-home " href="/" >
+                    <i class="fa fa-home "></i>
+                    
+                    首页
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-archive " href="/archives" >
+                    <i class="fa fa-archive "></i>
+                    
+                    归档
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                    <i class="fa fa-bookmark "></i>
+                    
+                    分类
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/reading" >
+                    <i class="fa fa-book "></i>
+                    
+                    读书
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/resources" >
+                    <i class="fa fa-book "></i>
+                    
+                    资源
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-about " href="/about" >
+                    <i class="fa fa-user "></i>
+                    
+                    关于
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-search modal-trigger " href="#search" >
+                    <i class="fa fa-search "></i>
+                    
+                    搜索
+                </a>
+            </li>
+        
+    </ul>
+
+    <ul class="side-nav indigo darken-1" id="category-menu">
+    
+
+            
+
+            <li class="collapse-level-0" collapse-level="0">
+                <a class="no-padding" href="/categories/RocketMQ/">
+                    RocketMQ <span class="right">10 篇</span></a>
+                </a>
+            </li>
+
+        
+
+    </ul>
+</div>
+
+        </div>
+    </div>
+</nav>
+
+<div id="search" class="modal search-modal">
+    <div class="row">
+        <div class="input-field col s12">
+              <input id="search-input" type="text">
+              <label for="search-input">搜索</label>
+        </div>
+
+    </div>
+    <div id="search-result" class="search-result col s12">
+
+    </div>
+</div>
+
+
+    <main>
+        <div class="container main-container">
+    <nav class="page-nav hide-on-small-only">
+    <div class="nav-wrapper indigo">
+        <span class="breadcrumb">当前位置（分类目录）</span>
+        
+            
+    
+    
+    <a class="breadcrumb" href="/categories/RocketMQ/">RocketMQ</a>
+
+
+        
+
+        
+    </div>
+</nav>
+
+<article>
+    <div class="card">
+        <div class="card-content">
+            
+
+            <div class="article-title">
+                
+    
+        <h1>RocketMQ系列13--Consumer消费端-Push</h1>
+    
+
+
+            </div>
+            <time class="pink-link-context" datetime="2018-09-02T16:00:00.000Z"><a href="/2018/09/03/RocketMQ系列13--Consumer消费端-Push/">2018-09-03</a></time>
+
+            <span id="busuanzi_container_page_pv" class="read-times-container">
+    <i class="fa fa-eye"></i>
+    <span id="busuanzi_value_page_pv"></span>
+</span>
+
+            
+    <div class="tags-row">
+        
+            <a href="/tags/rocketmq/" class="chip pink lighten-1">rocketmq</a>
+        
+            <a href="/tags/Producer/" class="chip pink lighten-1">Producer</a>
+        
+            <a href="/tags/Consumer/" class="chip pink lighten-1">Consumer</a>
+        
+            <a href="/tags/消费/" class="chip pink lighten-1">消费</a>
+        
+    </div>
+
+
+            <div class="toc pink-link-context hide-on-med-and-down">
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#0-概述"><span class="section table-of-contents-text">0.概述</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-RocketMQ消息订阅及长轮询机制"><span class="section table-of-contents-text">1.RocketMQ消息订阅及长轮询机制</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-demo代码"><span class="section table-of-contents-text">2.demo代码</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-Push方式的启动流程分析"><span class="section table-of-contents-text">3.Push方式的启动流程分析</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#6-参考"><span class="section table-of-contents-text">6.参考</span></a></li></ol>
+</div>
+
+
+            <div class="entry pink-link-context">
+                <h1 id="0-概述"><a href="#0-概述" class="headerlink" title="0.概述"></a>0.概述</h1><p>任何消息中间件,消费者端一般有2种方式从消息中间件获取消息并消费:</p>
+<p><strong>Push方式:</strong>由消息中间件(MQ消息服务器代理)主动将消息推送给消费者。采用Push方式，可以尽可能的实时将消息发送给消费者进行消费。但是，当你的消费者消费消息的能力比较弱的时候，但是MQ仍然会不断的向消费者push最新的消息，消费者端的缓冲区可能会溢出，导致异常。</p>
+<p>Pull方式: 由消费者客户端主动向消息中间件（MQ消息服务器代理）拉取消息，采用pull方式，需要关注的时消费者端去拉取的频率。如果每次pull的时间间隔比较久，会增加消息的延迟，即消息到达消费者的时间加长，MQ的消息的会堆积。若每次的pull时间间隔短，有可能在MQ中这段时间内正好没有消息可以消费，那么会产生很多无效的RPC开销，影响整个MQ整体的网络性能。</p>
+<h1 id="1-RocketMQ消息订阅及长轮询机制"><a href="#1-RocketMQ消息订阅及长轮询机制" class="headerlink" title="1.RocketMQ消息订阅及长轮询机制"></a>1.RocketMQ消息订阅及长轮询机制</h1><p>同样，RocketMQ消息订阅有两种模式，一种是Push模式，即MQServer主动向消费端推送；另外一种是Pull模式，即消费端在需要时，主动到MQServer拉取。通过研究源码可知，RocketMQ的消费方式都是基于拉模式拉取消息的。<br>那么在RocketMQ中如何解决以做到高效的消息消费呢？</p>
+<p>答案就是在rocketmq中有一种长轮询机制（对普通轮询的一种优化），来平衡上面push/pull模型的各自缺点。基本设计思路：</p>
+<p>消费者端如果第一次尝试pull消息失败（比如：broker端没有消息可以被消费），这时并不立即给消费者端返回response的响应，而是先hold住并挂起该请求（将该请求保存至pullRequestTable本地缓存变量中），然后broker端的后台独立线程（PullRequestHoldService）会从pullRequestTable本地缓存变量中不断去取信息（查询待拉取消息的偏移量是否小于消费队列的最大偏移量，如果条件成立则说明有新消息到达broker端）。同时,另外一个ReputMessageService线程不断的构建ConsumerQueue/IndexFile数据，并取出hold住的pull请求进行二次处理。如果有新消息到达broker端，则通过重新调用一次业务处理器-pullmessageProcessor的处理请求方法-processRequest来重新尝试拉取消息。</p>
+<h1 id="2-demo代码"><a href="#2-demo代码" class="headerlink" title="2.demo代码"></a>2.demo代码</h1><p>push模式下的消费者端代码.<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><span class="line">public class Consumer &#123;</span><br><span class="line"></span><br><span class="line">    public static void main(String[] args) throws InterruptedException, MQClientException &#123;</span><br><span class="line">        DefaultMQPushConsumer consumer = new DefaultMQPushConsumer(&quot;DingDing&quot;);</span><br><span class="line">        //设置 nameserver地址.</span><br><span class="line">        consumer.setNamesrvAddr(&quot;192.168.81.132:9876;192.168.81.134:9876&quot;);</span><br><span class="line">        /**</span><br><span class="line">         * 设置Consumer第一次启动是从队列头部开始消费还是队列尾部开始消费&lt;br&gt;</span><br><span class="line">         * 如果非第一次启动，那么按照上次消费的位置继续消费</span><br><span class="line">         */</span><br><span class="line">        consumer.setConsumeFromWhere(ConsumeFromWhere.CONSUME_FROM_FIRST_OFFSET);</span><br><span class="line"></span><br><span class="line">        consumer.subscribe(&quot;DingDing_Topic&quot;, &quot;*&quot;);</span><br><span class="line"></span><br><span class="line">        consumer.setConsumeMessageBatchMaxSize(10);</span><br><span class="line"></span><br><span class="line">        consumer.registerMessageListener(new MessageListenerConcurrently() &#123;</span><br><span class="line"></span><br><span class="line">            // 接收消息.</span><br><span class="line">            @Override</span><br><span class="line">            public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs,ConsumeConcurrentlyContext context) &#123;</span><br><span class="line">                for(MessageExt msg : msgs)&#123;</span><br><span class="line">                    try &#123;</span><br><span class="line">                        String topic = msg.getTopic();</span><br><span class="line">                        String tags = msg.getTags();</span><br><span class="line">                        String msgBody =  new String(msg.getBody(),&quot;utf-8&quot;);</span><br><span class="line">                        System.out.println(&quot;收到消息--&quot; + &quot; topic:&quot; + topic + &quot; ,tags:&quot; + tags + &quot; ,msg:&quot; +msgBody);</span><br><span class="line">                    &#125; catch (UnsupportedEncodingException e) &#123;</span><br><span class="line">                        e.printStackTrace();</span><br><span class="line"></span><br><span class="line">                        return ConsumeConcurrentlyStatus.RECONSUME_LATER;</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;</span><br><span class="line">                return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;);</span><br><span class="line"></span><br><span class="line">        consumer.start();</span><br><span class="line"></span><br><span class="line">        System.out.println(&quot;Consumer Started.&quot;);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>当使用 push模式的消费者时,只需要在消费者端注册一个监听器(new MessageListenerConcurrently),Consumer在收到消息后主动调用这个监听器完成消费并进行自己业务逻辑处理.</p>
+<h1 id="3-Push方式的启动流程分析"><a href="#3-Push方式的启动流程分析" class="headerlink" title="3.Push方式的启动流程分析"></a>3.Push方式的启动流程分析</h1><p><img src="https://upload-images.jianshu.io/upload_images/11560519-67bc66230732b52f.png" alt=""><br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br></pre></td><td class="code"><pre><span class="line">public synchronized void start() throws MQClientException &#123;</span><br><span class="line">        switch (this.serviceState) &#123;</span><br><span class="line">            case CREATE_JUST:</span><br><span class="line">                log.info(&quot;the consumer [&#123;&#125;] start beginning. messageModel=&#123;&#125;, isUnitMode=&#123;&#125;&quot;, this.defaultMQPushConsumer.getConsumerGroup(),</span><br><span class="line">                    this.defaultMQPushConsumer.getMessageModel(), this.defaultMQPushConsumer.isUnitMode());</span><br><span class="line">                this.serviceState = ServiceState.START_FAILED;</span><br><span class="line">                // 检查配置信息.</span><br><span class="line">                this.checkConfig();</span><br><span class="line">                // 复制订阅信息.</span><br><span class="line">                this.copySubscription();</span><br><span class="line"></span><br><span class="line">                if (this.defaultMQPushConsumer.getMessageModel() == MessageModel.CLUSTERING) &#123;</span><br><span class="line">                    this.defaultMQPushConsumer.changeInstanceNameToPID();</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                // 创建 MQClientInstance 对象.</span><br><span class="line">                this.mQClientFactory = MQClientManager.getInstance().getAndCreateMQClientInstance(this.defaultMQPushConsumer, this.rpcHook);</span><br><span class="line"></span><br><span class="line">                // 设置负载均衡示例 rebalanceImpl 的属性值.</span><br><span class="line">                this.rebalanceImpl.setConsumerGroup(this.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                this.rebalanceImpl.setMessageModel(this.defaultMQPushConsumer.getMessageModel());</span><br><span class="line">                this.rebalanceImpl.setAllocateMessageQueueStrategy(this.defaultMQPushConsumer.getAllocateMessageQueueStrategy());</span><br><span class="line">                this.rebalanceImpl.setmQClientFactory(this.mQClientFactory);</span><br><span class="line"></span><br><span class="line">                // 初始化 pullAPIWrapper</span><br><span class="line">                this.pullAPIWrapper = new PullAPIWrapper(</span><br><span class="line">                    mQClientFactory,</span><br><span class="line">                    this.defaultMQPushConsumer.getConsumerGroup(), isUnitMode());</span><br><span class="line">                this.pullAPIWrapper.registerFilterMessageHook(filterMessageHookList);</span><br><span class="line"></span><br><span class="line">                // 根据配置初始化 offsetStore 并加载进度条.</span><br><span class="line">                if (this.defaultMQPushConsumer.getOffsetStore() != null) &#123;</span><br><span class="line">                    this.offsetStore = this.defaultMQPushConsumer.getOffsetStore();</span><br><span class="line">                &#125; else &#123;</span><br><span class="line">                    switch (this.defaultMQPushConsumer.getMessageModel()) &#123;</span><br><span class="line">                        case BROADCASTING:</span><br><span class="line">                            this.offsetStore = new LocalFileOffsetStore(this.mQClientFactory, this.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                            break;</span><br><span class="line">                        case CLUSTERING:</span><br><span class="line">                            this.offsetStore = new RemoteBrokerOffsetStore(this.mQClientFactory, this.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                            break;</span><br><span class="line">                        default:</span><br><span class="line">                            break;</span><br><span class="line">                    &#125;</span><br><span class="line">                    this.defaultMQPushConsumer.setOffsetStore(this.offsetStore);</span><br><span class="line">                &#125;</span><br><span class="line">                this.offsetStore.load();</span><br><span class="line"></span><br><span class="line">                // 初始化消息消费服务并且启动.</span><br><span class="line">                if (this.getMessageListenerInner() instanceof MessageListenerOrderly) &#123;</span><br><span class="line">                    this.consumeOrderly = true;</span><br><span class="line">                    this.consumeMessageService =</span><br><span class="line">                        new ConsumeMessageOrderlyService(this, (MessageListenerOrderly) this.getMessageListenerInner());</span><br><span class="line">                &#125; else if (this.getMessageListenerInner() instanceof MessageListenerConcurrently) &#123;</span><br><span class="line">                    this.consumeOrderly = false;</span><br><span class="line">                    this.consumeMessageService =</span><br><span class="line">                        new ConsumeMessageConcurrentlyService(this, (MessageListenerConcurrently) this.getMessageListenerInner());</span><br><span class="line">                &#125;</span><br><span class="line">                this.consumeMessageService.start();</span><br><span class="line"></span><br><span class="line">                boolean registerOK = mQClientFactory.registerConsumer(this.defaultMQPushConsumer.getConsumerGroup(), this);</span><br><span class="line">                if (!registerOK) &#123;</span><br><span class="line">                    this.serviceState = ServiceState.CREATE_JUST;</span><br><span class="line">                    this.consumeMessageService.shutdown();</span><br><span class="line">                    throw new MQClientException(&quot;The consumer group[&quot; + this.defaultMQPushConsumer.getConsumerGroup()</span><br><span class="line">                        + &quot;] has been created before, specify another name please.&quot; + FAQUrl.suggestTodo(FAQUrl.GROUP_NAME_DUPLICATE_URL),</span><br><span class="line">                        null);</span><br><span class="line">                &#125;</span><br><span class="line"></span><br><span class="line">                mQClientFactory.start();</span><br><span class="line">                log.info(&quot;the consumer [&#123;&#125;] start OK.&quot;, this.defaultMQPushConsumer.getConsumerGroup());</span><br><span class="line">                this.serviceState = ServiceState.RUNNING;</span><br><span class="line">                break;</span><br><span class="line">            case RUNNING:</span><br><span class="line">            case START_FAILED:</span><br><span class="line">            case SHUTDOWN_ALREADY:</span><br><span class="line">                throw new MQClientException(&quot;The PushConsumer service state not OK, maybe started once, &quot;</span><br><span class="line">                    + this.serviceState</span><br><span class="line">                    + FAQUrl.suggestTodo(FAQUrl.CLIENT_SERVICE_NOT_OK),</span><br><span class="line">                    null);</span><br><span class="line">            default:</span><br><span class="line">                break;</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        // 更新订阅主题信息.</span><br><span class="line">        this.updateTopicSubscribeInfoWhenSubscriptionChanged();</span><br><span class="line">        // 检查broker上的所有客户端.</span><br><span class="line">        this.mQClientFactory.checkClientInBroker();</span><br><span class="line">        // 枷锁并向所有的broker端发送心跳.</span><br><span class="line">        this.mQClientFactory.sendHeartbeatToAllBrokerWithLock();</span><br><span class="line">        // 重新负载均衡.</span><br><span class="line">        this.mQClientFactory.rebalanceImmediately();</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br></pre></td><td class="code"><pre><span class="line">public void start() throws MQClientException &#123;</span><br><span class="line"></span><br><span class="line">        synchronized (this) &#123;</span><br><span class="line">            switch (this.serviceState) &#123;</span><br><span class="line">                case CREATE_JUST:</span><br><span class="line">                    this.serviceState = ServiceState.START_FAILED;</span><br><span class="line">                    // If not specified,looking address from name server</span><br><span class="line">                    // 路由到namesrv 地址.</span><br><span class="line">                    if (null == this.clientConfig.getNamesrvAddr()) &#123;</span><br><span class="line">                        this.mQClientAPIImpl.fetchNameServerAddr();</span><br><span class="line">                    &#125;</span><br><span class="line">                    // Start request-response channel</span><br><span class="line">                    this.mQClientAPIImpl.start();</span><br><span class="line">                    // Start various schedule tasks</span><br><span class="line">                    this.startScheduledTask();</span><br><span class="line">                    // Start pull service</span><br><span class="line">                    this.pullMessageService.start();</span><br><span class="line">                    // Start rebalance service</span><br><span class="line">                    this.rebalanceService.start();</span><br><span class="line">                    // Start push service</span><br><span class="line">                    this.defaultMQProducer.getDefaultMQProducerImpl().start(false);</span><br><span class="line">                    log.info(&quot;the client factory [&#123;&#125;] start OK&quot;, this.clientId);</span><br><span class="line">                    this.serviceState = ServiceState.RUNNING;</span><br><span class="line">                    break;</span><br><span class="line">                case RUNNING:</span><br><span class="line">                    break;</span><br><span class="line">                case SHUTDOWN_ALREADY:</span><br><span class="line">                    break;</span><br><span class="line">                case START_FAILED:</span><br><span class="line">                    throw new MQClientException(&quot;The Factory object[&quot; + this.getClientId() + &quot;] has been created before, and failed.&quot;, null);</span><br><span class="line">                default:</span><br><span class="line">                    break;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="6-参考"><a href="#6-参考" class="headerlink" title="6.参考"></a>6.参考</h1><p>[1]<a href="https://www.jianshu.com/p/f071d5069059" target="_blank" rel="noopener"> 消息中间件—RocketMQ消息消费（一）</a></p>
+<p>[2] <a href="https://www.jianshu.com/p/453c6e7ff81c" target="_blank" rel="noopener">分布式开放消息系统(RocketMQ)的原理与实践</a></p>
+
+                
+
+
+<p class="pink-link-context">
+    <a href="/2018/09/01/RocketMQ系列12--Producer事务消息机制/" rel="next" title="RocketMQ系列12--Producer 事务消息">
+    下一篇：RocketMQ系列12--Producer 事务消息
+  </a>
+</p>
+
+
+            </div>
+			
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+</div>
+
+        <div class="fixed-action-btn float-sitemap">
+    <a class="btn-floating btn-large pink">
+      <i class="fa fa-caret-square-o-up"></i>
+    </a>
+    <ul>
+      <li><a class="btn-return-top btn-floating waves-effect green" title="回到顶部"><i class="fa fa-arrow-circle-o-up"></i></a></li>
+      <li><a class="btn-floating waves-effect button-collapse yellow darken-1"  data-activates="main-menu" title="菜单"><i class="fa fa-navicon"></i></a></li>
+    </ul>
+  </div>
+
+    </main>
+    <footer class="page-footer indigo darken-1">
+    
+    <div class="footer-container container">
+        <div class="row">
+            
+            <div class="social-group col m4 s12">
+                <h5 class="white-text">社交</h5>
+                
+                    <a class="social-link" href="https://weibo.com/u/3187854180" target="_blank">
+                        <i class="fa fa-2x fa-weibo"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://github.com/liqiaozi" target="_blank">
+                        <i class="fa fa-2x fa-github"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">
+                        <i class="fa fa-2x fa-rss"></i>
+                    </a>
+                
+                
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+    </script>
+    <div class="site-visitors-container white-text">
+        <span>
+            <i class="fa fa-user"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+        </span>
+        <span>&nbsp;|&nbsp;</span>
+        <span>
+            <i class="fa fa-eye"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+        </span>
+    </div>
+
+
+            </div>
+            
+
+            
+            <div class="col m8 s12">
+                <h5 class="white-text">友情链接</h5>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">李乔子的酒(简书)</a>
+                
+                    <a class="social-link" href="https://blog.csdn.net/o135248" target="_blank">小李探花(CSDN)</a>
+                
+            </div>
+            
+        </div>
+    </div>
+    
+
+    <div class="footer-copyright pink-link-context">
+        <div class="container">
+            © 2018 liqiaozi.club, All rights reserved.
+            <p class="right" style="margin-top: 0;">本博客由 <a href="https://hexo.io">Hexo</a> </p>
+        </div>
+    </div>
+</footer>
+
+
+    <noscript>
+    <div class="noscript">
+        <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+    </div>
+</noscript>
+<div class="noscript">
+    <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+</div>
+
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/materialize.min.js"></script>
+
+<script>
+    (function($) {
+        $(document).ready(function() {
+            // 隐藏禁用javascript（针对微信内置浏览器）的提示
+            $('.noscript').hide();
+
+            // 图片缩放效果
+            var $imgs = $('img').not('.slider-image').not('.avatar-image').not('.carousel-image').not('.card-cover-image').not('.qrcode');
+
+            // 给图片加上点击放大效果（materialbox插件）
+            $imgs.addClass('materialboxed').each(function(i, el) {
+                $(this).attr('data-caption', $(this).attr('alt') || ' ');
+            }).materialbox();
+
+            // 优化表格的显示
+            $('table').each(function() {
+                var $table = $(this);
+                // 除去多行代码的情况
+                if ($table.find('pre').length == 0) {
+                    $table.addClass('responsive-table striped bordered');
+                }
+            });
+
+            // 首页幻灯片
+            $('.slider').slider({indicators: true, full_width: true, interval: 8000});
+
+            $(".button-collapse").sideNav();
+            $(".category-menu").sideNav();
+
+            // 针对gallery post
+            $('.carousel').carousel({full_width: true});
+            $('.carousel-control.prev').click(function() {
+                $('.carousel').carousel('prev');
+            });
+            $('.carousel-control.next').click(function() {
+                $('.carousel').carousel('next');
+            });
+
+            // 文章目录
+            $('article').not('.simple-article').find('h1').add('h2').add('h3').add('h4').add('h5').add('h6').scrollSpy();
+
+            // 目录随屏幕滚动（防止目录过长越过footer）
+            var $toc = $('.toc');
+            var scrollTargetTop = 0;
+            $(window).scroll(function() {
+                var $activeLink = $toc.find('a.active.section');
+                if ($(window).scrollTop() < 100) {
+                    scrollTargetTop = 0;
+                } else {
+                    if ($activeLink[0]) {
+                        scrollTargetTop = $activeLink.offset().top - $toc.offset().top;
+                    }
+                }
+                $toc.css('top', '-' + scrollTargetTop + 'px');
+            });
+
+            // 修正文章目录的left-border颜色
+            var color = $('.table-of-contents-text').css('color');
+            $('.table-of-contents-link').css('border-left-color', color);
+
+            // 针对移动端做的优化：FAB按钮点击一下收回
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                $('.fixed-action-btn').addClass('click-to-toggle');
+            }
+            // 回到顶部
+            $('.btn-return-top').click(function() {
+                $('body, html').animate({
+                    scrollTop: 0
+                }, 500);
+            });
+
+            // 重置读书页面的Tab标签页的颜色
+            $('li.tab a').hover(function() {
+                $(this).toggleClass('text-lighten-4');
+            });
+            $('.indicator').addClass('pink lighten-2');
+
+            
+            // 添加new标签
+            $('.menu-reading, .menu-about').append('<span class="new badge pink"></span>');
+            
+
+            // 搜索功能
+            $('.modal-trigger').leanModal({
+                // 打开搜索框时自动聚焦
+                ready: function() {
+                    if ($('#search').is(":visible")) {
+                        $('#search-input').focus();
+                    }
+                }
+            });
+            var searchXml = "search.xml";
+            if (searchXml.length == 0) {
+             	searchXml = "search.xml";
+            }
+            var searchPath = "/" + searchXml;
+            initSearch(searchPath, 'search-input', 'search-result');
+        });
+
+        // 初始化搜索与匹配函数
+        var initSearch = function(path, search_id, content_id) {
+            'use strict';
+            $.ajax({
+                url: path,
+                dataType: "xml",
+                success: function(xmlResponse) {
+                    // get the contents from search data
+                    var datas = $("entry", xmlResponse).map(function() {
+                        return {
+                            title: $("title", this).text(),
+                            content: $("content", this).text(),
+                            url: $("url", this).text()
+                        };
+                    }).get();
+                    var $input = document.getElementById(search_id);
+                    var $resultContent = document.getElementById(content_id);
+                    $input.addEventListener('input', function() {
+                        var str = '<ul class=\"search-result-list\">';
+                        var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                        $resultContent.innerHTML = "";
+                        if (this.value.trim().length <= 0) {
+                            return;
+                        }
+                        // perform local searching
+                        datas.forEach(function(data) {
+                            var isMatch = true;
+                            var content_index = [];
+                            var data_title = data.title.trim().toLowerCase();
+                            var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                            var data_url = data.url;
+                            var index_title = -1;
+                            var index_content = -1;
+                            var first_occur = -1;
+                            // only match artiles with not empty titles and contents
+                            if (data_title != '' && data_content != '') {
+                                keywords.forEach(function(keyword, i) {
+                                    index_title = data_title.indexOf(keyword);
+                                    index_content = data_content.indexOf(keyword);
+                                    if (index_title < 0 && index_content < 0) {
+                                        isMatch = false;
+                                    } else {
+                                        if (index_content < 0) {
+                                            index_content = 0;
+                                        }
+                                        if (i == 0) {
+                                            first_occur = index_content;
+                                        }
+                                    }
+                                });
+                            }
+                            // show search results
+                            if (isMatch) {
+                                keywords.forEach(function(keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    data_title = data_title.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                });
+
+                                str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                                var content = data.content.trim().replace(/<[^>]+>/g, "");
+                                if (first_occur >= 0) {
+                                    // cut out 100 characters
+                                    var start = first_occur - 20;
+                                    var end = first_occur + 80;
+                                    if (start < 0) {
+                                        start = 0;
+                                    }
+                                    if (start == 0) {
+                                        end = 100;
+                                    }
+                                    if (end > content.length) {
+                                        end = content.length;
+                                    }
+                                    var match_content = content.substring(start, end);
+                                    // highlight all keywords
+                                    keywords.forEach(function(keyword) {
+                                        var regS = new RegExp(keyword, "gi");
+                                        match_content = match_content.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                    });
+
+                                    str += "<p class=\"search-result\">..." + match_content + "...</p>"
+                                }
+                                str += "</li>";
+                            }
+                        });
+                        str += "</ul>";
+                        $resultContent.innerHTML = str;
+                    });
+                }
+            });
+        }
+    })(jQuery);
+</script>
+
+
+<script src="/js/prettify.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("pre").addClass("prettyprint");
+        prettyPrint();
+    });
+</script>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+});
+</script>
+<script type="text/javascript" async
+  src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+
+</body>
+</html>
