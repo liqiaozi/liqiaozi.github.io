@@ -7,22 +7,17 @@
 
     
 
-    <title>RocketMQ系列01--简介及概念 | 李乔子的酒</title>
+    <title>RocketMQ系列07--消息存储 | 李乔子的酒</title>
     <meta name="author" content="liqiaozi">
     
-    <meta name="description" content="1.RocketMQ是什么？
-RocketMQ：
-
-是一个队列模型的消息中间件，具有高性能、高可靠、高实时、分布式的特点；
-
-Producer、Consumer、队列都可以分布式部署；
-
-Producer向一些队列轮流发送消息，这些队列集合称为”Topic”。Consumer如果做广播消费，则一个C">
+    <meta name="description" content="0. RocketMQ消息存储rocketmq的broker消息存储主要包括3个部分,分别是:
+commitLog的存储,consumerQueue的存储,index的存储.
+1. Consumer Queueconsumer queue是消息的逻辑队列,相当于字典的目录,用来指定消息在物理文件co">
     
     
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-    <meta property="og:title" content="RocketMQ系列01--简介及概念"/>
+    <meta property="og:title" content="RocketMQ系列07--消息存储"/>
     <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
 
     
@@ -248,12 +243,12 @@ Producer向一些队列轮流发送消息，这些队列集合称为”Topic”�
             <div class="article-title">
                 
     
-        <h1>RocketMQ系列01--简介及概念</h1>
+        <h1>RocketMQ系列07--消息存储</h1>
     
 
 
             </div>
-            <time class="pink-link-context" datetime="2018-08-24T16:00:00.000Z"><a href="/2018/08/25/RocketMQ系列01--简介及概念/">2018-08-25</a></time>
+            <time class="pink-link-context" datetime="2018-09-08T16:00:00.000Z"><a href="/2018/09/09/RocketMQ系列07--消息存储/">2018-09-09</a></time>
 
             <span id="busuanzi_container_page_pv" class="read-times-container">
     <i class="fa fa-eye"></i>
@@ -265,127 +260,64 @@ Producer向一些队列轮流发送消息，这些队列集合称为”Topic”�
         
             <a href="/tags/rocketmq/" class="chip pink lighten-1">rocketmq</a>
         
-            <a href="/tags/概念/" class="chip pink lighten-1">概念</a>
+            <a href="/tags/消息存储/" class="chip pink lighten-1">消息存储</a>
         
     </div>
 
 
             <div class="toc pink-link-context hide-on-med-and-down">
-    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-RocketMQ是什么？"><span class="section table-of-contents-text">1.RocketMQ是什么？</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-RocketMQ物理部署结构"><span class="section table-of-contents-text">2.RocketMQ物理部署结构</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-RocketMQ逻辑部署结构"><span class="section table-of-contents-text">3.RocketMQ逻辑部署结构</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-概念术语"><span class="section table-of-contents-text">4.概念术语</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#5-参考"><span class="section table-of-contents-text">5.参考</span></a></li></ol>
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#0-RocketMQ消息存储"><span class="section table-of-contents-text">0. RocketMQ消息存储</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-Consumer-Queue"><span class="section table-of-contents-text">1. Consumer Queue</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-CommitLog"><span class="section table-of-contents-text">2. CommitLog</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-消息的索引文件index"><span class="section table-of-contents-text">3.消息的索引文件index</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-源码解读"><span class="section table-of-contents-text">4.源码解读</span></a></li></ol>
 </div>
 
 
             <div class="entry pink-link-context">
-                <h1 id="1-RocketMQ是什么？"><a href="#1-RocketMQ是什么？" class="headerlink" title="1.RocketMQ是什么？"></a>1.RocketMQ是什么？</h1><p><img src="http://img3.tbcdn.cn/5476e8b07b923/TB1rdyvPXXXXXcBapXXXXXXXXXX" alt=""></p>
-<p>RocketMQ：</p>
-<ul>
-<li><p>是一个队列模型的消息中间件，具有高性能、高可靠、高实时、分布式的特点；</p>
-</li>
-<li><p>Producer、Consumer、队列都可以分布式部署；</p>
-</li>
-<li><p>Producer向一些队列轮流发送消息，这些队列集合称为”Topic”。Consumer如果做广播消费，则一个Consumer实例消费这个Topic对应的所有的队列，如果是集群消费，则多个Consumer实例平均消费这个topic队列集合；</p>
-</li>
-<li><p>保证严格的消息顺序；</p>
-</li>
-<li><p>提供丰富的消息拉去模式；</p>
-</li>
-<li><p>高效的订阅者水平扩展能力；</p>
-</li>
-<li><p>实时的消息订阅机制；</p>
-</li>
-<li><p>亿级消息堆积能力。</p>
-<p>RocketMQ是Java语言编写，基于通信框架Netty。</p>
-</li>
-</ul>
-<h1 id="2-RocketMQ物理部署结构"><a href="#2-RocketMQ物理部署结构" class="headerlink" title="2.RocketMQ物理部署结构"></a>2.RocketMQ物理部署结构</h1><p><img src="http://img3.tbcdn.cn/5476e8b07b923/TB18GKUPXXXXXXRXFXXXXXXXXXX" alt=""></p>
-<p>从上图中，我们可以看到消息队列的主要角色有：</p>
-<ul>
-<li>NameServer:无状态节点，供 Producer 和 Consumer 获取Broker地址。</li>
-<li>Broker:MQ的服务器，消息的中转角色，负责存储和转发消息。</li>
-<li>Producer:发送消息到消息队列(消息生产者)。</li>
-<li>Consumer:从消息队列接收消息（消息消费者）。</li>
-</ul>
-<p>RocketMQ网络部署特点：</p>
-<ul>
-<li><p>　　NameServer是一个无状态的节点，可集群部署，节点之间无任何信息同步。</p>
-</li>
-<li><p>　　Broker:分为Master和Slave.一个Master可以有多个Slave,但是一个Slave只能对应一个Master.Master和Slave的对应关系是通过指定 “相同的BrokerName,不同的BrokerId”来定义。BrokerId=0表示Master,非0表示Slave。每个Broker与NameServer集群中的所有节点建立长连接，定时注册Topic信息到所有的NameServer。</p>
-</li>
-<li><p>　　Producer与NamerServer中的任意一个节点建立长连接，定期从NameServer中取Topic的路由信息，并与提供Topic服务的Master建立长连接，定时向Master发送心跳。可集群部署。</p>
-</li>
-<li><p>　　Consumer与NamerServer中的任意一个节点建立长连接，定期从NameServer中取Topic的路由信息，并与提供Topic服务的Master和Slave建立长连接，且定时向Master和Slave发送心跳。Consumer既可以从 Master 订阅消息，也可以从 Slave 订阅消息，订阅规则由 Broker 配置决定。</p>
-</li>
-</ul>
-<h1 id="3-RocketMQ逻辑部署结构"><a href="#3-RocketMQ逻辑部署结构" class="headerlink" title="3.RocketMQ逻辑部署结构"></a>3.RocketMQ逻辑部署结构</h1><p><img src="http://img3.tbcdn.cn/5476e8b07b923/TB1lEPePXXXXXX8XXXXXXXXXXXX" alt=""></p>
-<p><strong>Producer Group</strong></p>
+                <h1 id="0-RocketMQ消息存储"><a href="#0-RocketMQ消息存储" class="headerlink" title="0. RocketMQ消息存储"></a>0. RocketMQ消息存储</h1><p>rocketmq的broker消息存储主要包括3个部分,分别是:</p>
+<p>commitLog的存储,<br>consumerQueue的存储,<br>index的存储.</p>
+<h1 id="1-Consumer-Queue"><a href="#1-Consumer-Queue" class="headerlink" title="1. Consumer Queue"></a>1. Consumer Queue</h1><p>consumer queue是消息的逻辑队列,相当于字典的目录,用来指定消息在物理文件commit log上的位置。</p>
+<p>我们可以在配置中指定 consumerqueue 与 commitlog存储的目录。</p>
+<p>每个topic下的每个queue都有一个对应的 consumerqueue文件。</p>
+<pre><code>${rocketmq.home}/store/consumequeue/${topicName}/${queueId}/${fileName}
+</code></pre><p><img src="https://upload-images.jianshu.io/upload_images/11560519-e9d1580352721a01.png" alt=""></p>
+<p><strong>Consume Queue文件组织示意图</strong></p>
 <blockquote>
-<p>​　　用来表示一个収送消息应用，一个 Producer Group 下包含多个 Producer 实例，可以是多台机器，也可以是一台机器的多个迕程，戒者一个迕程的多个 Producer 对象。一个 Producer Group 可以収送多个 Topic消息。作用有：</p>
-<p>​    1.标识一类producer;</p>
-<p>​    2.查询返个収送消息应用下有多个 Producer 实例;</p>
-<p>​    3.収送分布式事务消息时，如果 Producer 中途意外宕机，Broker 会主劢回调 Producer Group 内的任意一台机器来确讣事务状态。</p>
+<p>1.根据topic和queueId来组织文件，图中TopicA有两个队列0,1，那么TopicA和QueueId=0组成一个ConsumeQueue，TopicA和QueueId=1组成另一个ConsumeQueue。</p>
+<p>2.按照消费端的GroupName来分组重试队列，如果消费端消费失败，消息将被发往重试队列中，比如图中的%RETRY%ConsumerGroupA。</p>
+<p>3.按照消费端的GroupName来分组死信队列，如果消费端消费失败，并重试指定次数后，仍然失败，则发往死信队列，比如图中的%DLQ%ConsumerGroupA。</p>
 </blockquote>
-<p><strong>Consumer Group</strong></p>
-<blockquote>
-<p>​　　用来表示一个消费消息应用，一个 Consumer Group 下包含多个 Consumer 实例，可以是多台机器，也可以是多个迕程，戒者是一个迕程的多个 Consumer 对象。一个 Consumer Group 下的多个 Consumer 以均摊方式消费消息，如果设置为广播方式，那举返个 Consumer Group 下的每个实例都消费全量数据。</p>
-</blockquote>
+<p>Consume Queue中存储单元是一个20字节定长的二进制数据，顺序写顺序读，如下图所示：</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/175724-7212acc81b91c086.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
 <ul>
-<li><p>Topic：消息的逻辑管理单位；</p>
-</li>
-<li><p>Message Queue:消息物理管理单位，一个Topic可以有若干个Queue;</p>
-</li>
-<li><p>Message:消息</p>
-<ul>
-<li>body：消息体，用于携带消息的内容。</li>
-<li>key:消息key,用于区分不同的消息，一般是业务id信息，根据key可查询到消息；</li>
-<li>tag:消息tag,用于不同的订阅者来过滤消息。</li>
+<li>CommitLog Offset是指这条消息在CommitLog中的实际偏移量；</li>
+<li>Size 存储消息的大小</li>
+<li>Message Tag Hashcode 存储消息的Tag哈希值：主要用于订阅时消息过滤（订阅时如果指定了Tag，会根据HashCode来快速查找到订阅的消息。）</li>
 </ul>
-<p>​</p>
-</li>
-</ul>
-<h1 id="4-概念术语"><a href="#4-概念术语" class="headerlink" title="4.概念术语"></a><strong>4</strong>.概念术语</h1><ul>
-<li>广播消费</li>
-</ul>
-<blockquote>
-<p>　　 一条消息被多个 Consumer 消费，即使返些 Consumer 属亍同一个 Consumer Group，消息也会被 Consumer Group 中的每个 Consumer 都消费一次，广播消费中的 Consumer Group 概念可以讣为在消息划分方面无意义。</p>
-</blockquote>
-<ul>
-<li>集群消费</li>
-</ul>
-<blockquote>
-<p>​　　一个 Consumer Group 中的 Consumer 实例平均分摊消费消息。例如某个 Topic 有 9 条消息，其中一个Consumer Group 有 3 个实例（可能是 3 个迕程，戒者 3 台机器），那举每个实例只消费其中的 3 条消息。在 CORBA Notification 规范中，无此消费方式。<br>​    在 JMS 规范中，JMS point-to-point model 类似，但是 RocketMQ 的集群消费功能大等于 PTP 模型。<br>​    因为 RocketMQ 单个 Consumer Group 内的消费者类似于 PTP，但是一个 Topic/Queue 可以被多个 Consumer Group 消费。</p>
-</blockquote>
-<ul>
-<li>顺序消息</li>
-</ul>
-<blockquote>
-<p>　　消费消息的顺序要同发送消息的顺序一致，在 RocketMQ 中，主要指的是局部顺序，即一类消息为满足顺序性，必须 Producer 单线程顺序发送，且发送到同一个队列，这样 Consumer 就可以按照 Producer 发送的顺序去消费消息。</p>
-</blockquote>
-<ul>
-<li>普通顺序消息</li>
-</ul>
-<blockquote>
-<p>​    顺序消息的一种，正常情况下可以保证完全的顺序消息，但是一旦发生通信异常，Broker 重启，由于队列总数发生发化，哈希取模后定位的队列会发化，产生短暂的消息顺序不一致。<br>如果业务能容忍在集群异常情况（如某个 Broker 宕机或者重启）下，消息短暂的乱序，使用普通顺序方式比较合适。</p>
-</blockquote>
-<ul>
-<li>严格的顺序消息</li>
-</ul>
-<blockquote>
-<p>​　　顺序消息的一种，无论正常异常情况都能保证顺序，但是牺牲了分布式 Failover 特性，即 Broker 集群中只要有一台机器不可用，则整个集群都不可用，服务可用性大大降低。</p>
-</blockquote>
-<blockquote>
-<p>　　如果服务器部署为同步双写模式，此缺陷可通过备机自动切换为主避免，不过仍然会存在几分钟的服务不可用。（依赖同步双写，主备自动切换，自动切换功能目前还未实现）<br>目前已知的应用只有数据库 binlog 同步强依赖严格顺序消息，其他应用绝大部分都可以容忍短暂乱序，推荐使用普通的顺序消息。</p>
-</blockquote>
-<h1 id="5-参考"><a href="#5-参考" class="headerlink" title="5.参考"></a>5.参考</h1><p>1.RocketMQ 开发指南（V3.2.4）</p>
-<p>2.<a href="https://blog.csdn.net/gwd1154978352/article/details/80654314" target="_blank" rel="noopener">RocketMQ——初识RocketMQ</a></p>
+<h1 id="2-CommitLog"><a href="#2-CommitLog" class="headerlink" title="2. CommitLog"></a>2. CommitLog</h1><p>消息存放的物理文件，每台broker上的commitlog被本机所有的queue共享，不做任何区分。<br>文件的默认位置如下，可以通过配置文件配置修改：</p>
+<pre><code>${user.home} \store\${commitlog}\${fileName}
+</code></pre><p>CommitLog的消息存储单元长度不固定，文件顺序写，随机读。消息的存储结构如下表所示，按照编号顺序以及编号对应的内容依次存储。<br><img src="http://upload-images.jianshu.io/upload_images/175724-96ed677eb504abfe.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<h1 id="3-消息的索引文件index"><a href="#3-消息的索引文件index" class="headerlink" title="3.消息的索引文件index"></a>3.消息的索引文件index</h1><p>如果一个消息包含key值的话，会使用IndexFile存储消息索引，文件内容结构如图：</p>
+<p><img src="http://upload-images.jianshu.io/upload_images/175724-4deee0fb9d08e02d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p><img src="http://upload-images.jianshu.io/upload_images/175724-4deee0fb9d08e02d.png?imageMogr2/auto-orient/strip%7CimageView2/2/w/1240" alt=""></p>
+<p>索引文件主要用于根据key来查询消息的，流程主要是：</p>
+<p>1.根据查询的key的 (hash值 % slotNum) 得到具体的槽的位置（slotNum）是一个索引文件里面包含的最大槽的数目。</p>
+<p>2.根据 slotValue(slot 位置对应的值)查找到索引项列表的最后一项(倒序排列,slotValue 总是指向最新的一个索引项)</p>
+<p>3.遍历索引项列表返回查询时间范围内的结果集(默认一次最大返回的 32 条记录) .</p>
+<h1 id="4-源码解读"><a href="#4-源码解读" class="headerlink" title="4.源码解读"></a>4.源码解读</h1><p>入口类：SendMessageProcessor.java<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line">@Override</span><br><span class="line">public RemotingCommand processRequest(ChannelHandlerContext ctx,</span><br><span class="line">                                      RemotingCommand request) throws RemotingCommandException &#123;</span><br><span class="line">    SendMessageContext mqtraceContext;</span><br><span class="line">    switch (request.getCode()) &#123;</span><br><span class="line">        case RequestCode.CONSUMER_SEND_MSG_BACK:</span><br><span class="line">            return this.consumerSendMsgBack(ctx, request);</span><br><span class="line">        default:</span><br><span class="line">            SendMessageRequestHeader requestHeader = parseRequestHeader(request);</span><br><span class="line">            if (requestHeader == null) &#123;</span><br><span class="line">                return null;</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            mqtraceContext = buildMsgContext(ctx, requestHeader);</span><br><span class="line">            this.executeSendMessageHookBefore(ctx, request, mqtraceContext);</span><br><span class="line"></span><br><span class="line">            RemotingCommand response;</span><br><span class="line">            if (requestHeader.isBatch()) &#123;</span><br><span class="line">                response = this.sendBatchMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">            &#125; else &#123;</span><br><span class="line">                response = this.sendMessage(ctx, request, mqtraceContext, requestHeader);</span><br><span class="line">            &#125;</span><br><span class="line"></span><br><span class="line">            this.executeSendMessageHookAfter(response, mqtraceContext);</span><br><span class="line">            return response;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p><img src="https://upload-images.jianshu.io/upload_images/6302559-124bde9f2799a151.png" alt=""></p>
 
                 
 <p class="pink-link-context">
-    <a href="/2018/08/26/RocketMQ系列02--集群构建模型/" rel="next" title="RocketMQ系列02--集群构建模型">
-    上一篇：RocketMQ系列02--集群构建模型
+    <a href="/2018/09/09/RocketMQ系列16--Consumer重试策略/" rel="next" title="RocketMQ系列16--Consumer重试策略">
+    上一篇：RocketMQ系列16--Consumer重试策略
   </a>
 </p>
 
 
+
+<p class="pink-link-context">
+    <a href="/2018/09/09/RocketMQ系列08--NameServer/" rel="next" title="RocketMQ系列08--Namersrv">
+    下一篇：RocketMQ系列08--Namersrv
+  </a>
+</p>
 
 
             </div>

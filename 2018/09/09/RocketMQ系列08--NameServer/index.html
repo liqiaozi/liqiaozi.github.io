@@ -1,0 +1,635 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+
+    
+
+    <title>RocketMQ系列08--Namersrv | 李乔子的酒</title>
+    <meta name="author" content="liqiaozi">
+    
+    <meta name="description" content="1.前言主要管理所有的broker信息,让producer和consumer都能获取到正确的broker信息,进行业务处理.类似于zookeeper的服务治理中心.简而言之,主要包含下面几方面的功能:
+
+Broker启动的时候会向NameSrv发送注册请求，Namesrv接收broker的请求注册路">
+    
+    
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+    <meta property="og:title" content="RocketMQ系列08--Namersrv"/>
+    <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
+
+    
+    <meta property="og:image" content=""/>
+    
+
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link rel="alternate" href="/atom.xml" title="Liqiaozi&#39;Blog" type="application/atom+xml">
+    <link rel="stylesheet" href="/css/lib/materialize.min.css">
+    <link rel="stylesheet" href="/css/lib/font-awesome.min.css">
+    <link rel="stylesheet" href="/css/style.css" media="screen" type="text/css">
+
+    
+        <link rel="stylesheet" href="/css/lib/prettify-tomorrow-night-eighties.css" type="text/css">
+    
+    <!--[if lt IE 9]><script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script><![endif]-->
+</head>
+
+
+<body>
+    <img src="/weixin_favicon.png" style="position: absolute; left: -9999px; opacity: 0; filter: alpha(opacity=0);">
+
+    <nav class="indigo">
+    <div class="nav-wrapper">
+        <a href="#" data-activates="main-menu" class="button-collapse">
+            <i class="fa fa-navicon"></i>
+        </a>
+        <div class="">
+            <a href="/" class="brand-logo hide-on-med-and-down">Liqiaozi&#39;Blog</a>
+            <ul class="right hide-on-med-and-down">
+                
+                    <li>
+                        <a class="menu-home " href="/" >
+                            <i class="fa fa-home "></i>
+                            
+                            首页
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-archive " href="/archives" >
+                            <i class="fa fa-archive "></i>
+                            
+                            归档
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                            <i class="fa fa-bookmark "></i>
+                            
+                            分类
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/reading" >
+                            <i class="fa fa-book "></i>
+                            
+                            读书
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-reading " href="/resources" >
+                            <i class="fa fa-book "></i>
+                            
+                            资源
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-about " href="/about" >
+                            <i class="fa fa-user "></i>
+                            
+                            关于
+                        </a>
+                    </li>
+                
+                    <li>
+                        <a class="menu-search modal-trigger " href="#search" >
+                            <i class="fa fa-search "></i>
+                            
+                            搜索
+                        </a>
+                    </li>
+                
+            </ul>
+            <div>
+    <ul class="side-nav indigo darken-1" id="main-menu">
+        
+        <li class="side-user">
+            <div class="row">
+                <div class="col s4 no-padding">
+                    <img class="avatar-image circle responsive-img" src="http://p3.music.126.net/_2CmjbuNTmbnlEhHqOG7Pw==/18923694626218379.jpg?param=300y300" alt="User Avatar">
+                </div>
+                <div class="info col s8 valign-wrapper no-padding">
+                    <div class="valign">
+                        <p class="name">李乔子的酒</p>
+                        <p class="desc">Web服务端 SpringBoot SpringCloud</p>
+                    </div>
+                </div>
+            </div>
+        </li>
+        
+
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-home " href="/" >
+                    <i class="fa fa-home "></i>
+                    
+                    首页
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-archive " href="/archives" >
+                    <i class="fa fa-archive "></i>
+                    
+                    归档
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-category category-menu" href="javascript:;" data-activates="category-menu" >
+                    <i class="fa fa-bookmark "></i>
+                    
+                    分类
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/reading" >
+                    <i class="fa fa-book "></i>
+                    
+                    读书
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-reading " href="/resources" >
+                    <i class="fa fa-book "></i>
+                    
+                    资源
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-about " href="/about" >
+                    <i class="fa fa-user "></i>
+                    
+                    关于
+                </a>
+            </li>
+        
+            <li class="no-padding">
+                <a class="waves-effect menu-search modal-trigger " href="#search" >
+                    <i class="fa fa-search "></i>
+                    
+                    搜索
+                </a>
+            </li>
+        
+    </ul>
+
+    <ul class="side-nav indigo darken-1" id="category-menu">
+    
+
+            
+
+            <li class="collapse-level-0" collapse-level="0">
+                <a class="no-padding" href="/categories/RocketMQ/">
+                    RocketMQ <span class="right">16 篇</span></a>
+                </a>
+            </li>
+
+        
+
+    </ul>
+</div>
+
+        </div>
+    </div>
+</nav>
+
+<div id="search" class="modal search-modal">
+    <div class="row">
+        <div class="input-field col s12">
+              <input id="search-input" type="text">
+              <label for="search-input">搜索</label>
+        </div>
+
+    </div>
+    <div id="search-result" class="search-result col s12">
+
+    </div>
+</div>
+
+
+    <main>
+        <div class="container main-container">
+    <nav class="page-nav hide-on-small-only">
+    <div class="nav-wrapper indigo">
+        <span class="breadcrumb">当前位置（分类目录）</span>
+        
+            
+    
+    
+    <a class="breadcrumb" href="/categories/RocketMQ/">RocketMQ</a>
+
+
+        
+
+        
+    </div>
+</nav>
+
+<article>
+    <div class="card">
+        <div class="card-content">
+            
+
+            <div class="article-title">
+                
+    
+        <h1>RocketMQ系列08--Namersrv</h1>
+    
+
+
+            </div>
+            <time class="pink-link-context" datetime="2018-09-08T16:00:00.000Z"><a href="/2018/09/09/RocketMQ系列08--NameServer/">2018-09-09</a></time>
+
+            <span id="busuanzi_container_page_pv" class="read-times-container">
+    <i class="fa fa-eye"></i>
+    <span id="busuanzi_value_page_pv"></span>
+</span>
+
+            
+    <div class="tags-row">
+        
+            <a href="/tags/rocketmq/" class="chip pink lighten-1">rocketmq</a>
+        
+            <a href="/tags/namesrv/" class="chip pink lighten-1">namesrv</a>
+        
+    </div>
+
+
+            <div class="toc pink-link-context hide-on-med-and-down">
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-前言"><span class="section table-of-contents-text">1.前言</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-namesrv启动和初始化"><span class="section table-of-contents-text">2.namesrv启动和初始化</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-处理broker的注册请求"><span class="section table-of-contents-text">3.处理broker的注册请求</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-根据Topic获取Broker信息和Topic配置信息"><span class="section table-of-contents-text">4.根据Topic获取Broker信息和Topic配置信息</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#5-推荐"><span class="section table-of-contents-text">5.推荐</span></a></li></ol>
+</div>
+
+
+            <div class="entry pink-link-context">
+                <h1 id="1-前言"><a href="#1-前言" class="headerlink" title="1.前言"></a>1.前言</h1><p>主要管理所有的broker信息,让producer和consumer都能获取到正确的broker信息,进行业务处理.类似于zookeeper的服务治理中心.简而言之,主要包含下面几方面的功能:</p>
+<ol>
+<li>Broker启动的时候会向NameSrv发送注册请求，Namesrv接收broker的请求注册路由信息和保存活跃的broker列表，包括master和slave;</li>
+<li>用来保存所有的topic和该topic所有队列的列表；</li>
+<li>Namesrv用来保存所有broker的Filter列表；</li>
+<li>接收producer和consumer的请求，根据某个topic获取到broker的路由信息。</li>
+</ol>
+<h1 id="2-namesrv启动和初始化"><a href="#2-namesrv启动和初始化" class="headerlink" title="2.namesrv启动和初始化"></a>2.namesrv启动和初始化</h1><p>namesrv启动的时候主要涉及 NamesrvStartup/NamesrvController 两个类。NamesrvStartup 负责解析命令行的一些参数到各种 Config 对象中（NamesrvConfig/NettyServerConfig等），如果命令行参数中带有配置文件的路径，也会从配置文件中读取配置到各种 Config 对象中，然后初始化 NamesrvController，配置shutdownHook, 启动 NamesrvController。</p>
+<p>NamesrvController 会去初始化和启动各个组件，主要是:</p>
+<ul>
+<li>创建NettyServer，注册 requestProcessor，用于处理不同的网络请求</li>
+<li>启动 NettyServer</li>
+<li>启动各种 scheduled task.</li>
+</ul>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line">public static NamesrvController main0(String[] args) &#123;</span><br><span class="line"></span><br><span class="line">        try &#123;</span><br><span class="line">            // 加载命令行配置信息.初始化NamesrvController配置信息.</span><br><span class="line">            NamesrvController controller = createNamesrvController(args);</span><br><span class="line">            start(controller);</span><br><span class="line">            String tip = &quot;The Name Server boot success. serializeType=&quot; + RemotingCommand.getSerializeTypeConfigInThisServer();</span><br><span class="line">            log.info(tip);</span><br><span class="line">            System.out.printf(&quot;%s%n&quot;, tip);</span><br><span class="line">            return controller;</span><br><span class="line">        &#125; catch (Throwable e) &#123;</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">            System.exit(-1);</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        return null;</span><br><span class="line">    &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line">public static NamesrvController start(final NamesrvController controller) throws Exception &#123;</span><br><span class="line"></span><br><span class="line">       if (null == controller) &#123;</span><br><span class="line">           throw new IllegalArgumentException(&quot;NamesrvController is null&quot;);</span><br><span class="line">       &#125;</span><br><span class="line">       // 初始化 配置信息</span><br><span class="line">       boolean initResult = controller.initialize();</span><br><span class="line">       if (!initResult) &#123;</span><br><span class="line">           controller.shutdown();</span><br><span class="line">           System.exit(-3);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       Runtime.getRuntime().addShutdownHook(new ShutdownHookThread(log, new Callable&lt;Void&gt;() &#123;</span><br><span class="line">           @Override</span><br><span class="line">           public Void call() throws Exception &#123;</span><br><span class="line">               controller.shutdown();</span><br><span class="line">               return null;</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;));</span><br><span class="line"></span><br><span class="line">       controller.start();</span><br><span class="line"></span><br><span class="line">       return controller;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br></pre></td><td class="code"><pre><span class="line">public boolean initialize() &#123;</span><br><span class="line">        // 加载NameServer的配置参数，将配置参数加载保存到一个HashMap中</span><br><span class="line">        this.kvConfigManager.load();</span><br><span class="line">        // 初始化 BrokerHousekeepingService 对象为参数初始化</span><br><span class="line">        this.remotingServer = new NettyRemotingServer(this.nettyServerConfig, this.brokerHousekeepingService);</span><br><span class="line"></span><br><span class="line">        this.remotingExecutor =</span><br><span class="line">            Executors.newFixedThreadPool(nettyServerConfig.getServerWorkerThreads(), new ThreadFactoryImpl(&quot;RemotingExecutorThread_&quot;));</span><br><span class="line"></span><br><span class="line">        // 注册默认的处理类 DefaultRequestProcessor,所有的请求均由该处理类的 processRequest 方法来处理</span><br><span class="line">        this.registerProcessor();</span><br><span class="line"></span><br><span class="line">        // 设置两个定时任务</span><br><span class="line">        // 每隔十秒钟遍历brokerLiveTable集合，查看每个broker的最后更新时间是否超过了两分钟，</span><br><span class="line">        // 超过则关闭broker的渠道并清理 RouteInfoManager 类的topicQueueTable、 brokerAddrTable、 clusterAddrTable、 filterServerTable成员变量</span><br><span class="line">        this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() &#123;</span><br><span class="line"></span><br><span class="line">            @Override</span><br><span class="line">            public void run() &#123;</span><br><span class="line">                NamesrvController.this.routeInfoManager.scanNotActiveBroker();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, 5, 10, TimeUnit.SECONDS);</span><br><span class="line"></span><br><span class="line">        // 每隔 10 分钟打印一次 NameServer 的配置参数。即KVConfigManager.configTable 变量的内容</span><br><span class="line">        this.scheduledExecutorService.scheduleAtFixedRate(new Runnable() &#123;</span><br><span class="line"></span><br><span class="line">            @Override</span><br><span class="line">            public void run() &#123;</span><br><span class="line">                NamesrvController.this.kvConfigManager.printAllPeriodically();</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;, 1, 10, TimeUnit.MINUTES);</span><br><span class="line"></span><br><span class="line">        // 启动 NameServer 的 Netty 服务端（ NettyRemotingServer），监听渠道的请求信息。</span><br><span class="line">        // 当收到客户端的请求信息之后会初始化一个线程，并放入线程池中进行处理,该线程调用 DefaultRequestProcessor. processRequest 方法来处理请求</span><br><span class="line">        if (TlsSystemConfig.tlsMode != TlsMode.DISABLED) &#123;</span><br><span class="line">            // Register a listener to reload SslContext</span><br><span class="line">            try &#123;</span><br><span class="line">                fileWatchService = new FileWatchService(</span><br><span class="line">                    new String[] &#123;</span><br><span class="line">                        TlsSystemConfig.tlsServerCertPath,</span><br><span class="line">                        TlsSystemConfig.tlsServerKeyPath,</span><br><span class="line">                        TlsSystemConfig.tlsServerTrustCertPath</span><br><span class="line">                    &#125;,</span><br><span class="line">                    new FileWatchService.Listener() &#123;</span><br><span class="line">                        boolean certChanged, keyChanged = false;</span><br><span class="line">                        @Override</span><br><span class="line">                        public void onChanged(String path) &#123;</span><br><span class="line">                            if (path.equals(TlsSystemConfig.tlsServerTrustCertPath)) &#123;</span><br><span class="line">                                log.info(&quot;The trust certificate changed, reload the ssl context&quot;);</span><br><span class="line">                                reloadServerSslContext();</span><br><span class="line">                            &#125;</span><br><span class="line">                            if (path.equals(TlsSystemConfig.tlsServerCertPath)) &#123;</span><br><span class="line">                                certChanged = true;</span><br><span class="line">                            &#125;</span><br><span class="line">                            if (path.equals(TlsSystemConfig.tlsServerKeyPath)) &#123;</span><br><span class="line">                                keyChanged = true;</span><br><span class="line">                            &#125;</span><br><span class="line">                            if (certChanged &amp;&amp; keyChanged) &#123;</span><br><span class="line">                                log.info(&quot;The certificate and private key changed, reload the ssl context&quot;);</span><br><span class="line">                                certChanged = keyChanged = false;</span><br><span class="line">                                reloadServerSslContext();</span><br><span class="line">                            &#125;</span><br><span class="line">                        &#125;</span><br><span class="line">                        private void reloadServerSslContext() &#123;</span><br><span class="line">                            ((NettyRemotingServer) remotingServer).loadSslContext();</span><br><span class="line">                        &#125;</span><br><span class="line">                    &#125;);</span><br><span class="line">            &#125; catch (Exception e) &#123;</span><br><span class="line">                log.warn(&quot;FileWatchService created error, can&apos;t load the certificate dynamically&quot;);</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="3-处理broker的注册请求"><a href="#3-处理broker的注册请求" class="headerlink" title="3.处理broker的注册请求"></a>3.处理broker的注册请求</h1><p>DefaultRequestProcessor.processRequest处理请求, 如果 request.getCode 是 RequestCode.REGISTER_BROKER, 就去注册。这里会根据request.version来判断，从V3_0_11 开始支持了FilterServer。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">case RequestCode.REGISTER_BROKER:</span><br><span class="line">Version brokerVersion = MQVersion.value2Version(request.getVersion());</span><br><span class="line">if (brokerVersion.ordinal() &gt;= MQVersion.Version.V3_0_11.ordinal()) &#123;</span><br><span class="line">    return this.registerBrokerWithFilterServer(ctx, request);</span><br><span class="line">&#125; else &#123;</span><br><span class="line">    return this.registerBroker(ctx, request);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br></pre></td><td class="code"><pre><span class="line">public RegisterBrokerResult registerBroker(</span><br><span class="line">      final String clusterName,</span><br><span class="line">      final String brokerAddr,</span><br><span class="line">      final String brokerName,</span><br><span class="line">      final long brokerId,</span><br><span class="line">      final String haServerAddr,</span><br><span class="line">      final TopicConfigSerializeWrapper topicConfigWrapper,</span><br><span class="line">      final List&lt;String&gt; filterServerList,</span><br><span class="line">      final Channel channel) &#123;</span><br><span class="line">      RegisterBrokerResult result = new RegisterBrokerResult();</span><br><span class="line">      try &#123;</span><br><span class="line">          try &#123;</span><br><span class="line">              this.lock.writeLock().lockInterruptibly();</span><br><span class="line"></span><br><span class="line">              /**</span><br><span class="line">               * 维护 RouteInfoManager.clusterAddrTable 变量； 若 Broker 集群名字不</span><br><span class="line">               在该 Map 变量中，则初始化一个 Set 集合，将 brokerName 存入该 Set 集合中，</span><br><span class="line">               然后以 clusterName 为 key 值，该 Set 集合为 values 值存入此 Map 变量中</span><br><span class="line">               */</span><br><span class="line">              Set&lt;String&gt; brokerNames = this.clusterAddrTable.get(clusterName);</span><br><span class="line">              if (null == brokerNames) &#123;</span><br><span class="line">                  brokerNames = new HashSet&lt;String&gt;();</span><br><span class="line">                  this.clusterAddrTable.put(clusterName, brokerNames);</span><br><span class="line">              &#125;</span><br><span class="line">              brokerNames.add(brokerName);</span><br><span class="line"></span><br><span class="line">              boolean registerFirst = false;</span><br><span class="line"></span><br><span class="line">              /**</span><br><span class="line">               * 维护 RouteInfoManager.brokerAddrTable 变量，该变量是维护 Broker</span><br><span class="line">               的名称、 ID、地址等信息的。 若该 brokername 不在该 Map 变量中，则创建</span><br><span class="line">               BrokerData 对象，该对象包含了 brokername，以及 brokerId 和 brokerAddr 为</span><br><span class="line">               K-V 的 brokerAddrs 变量；然后以 brokername 为 key 值将 BrokerData 对象存入</span><br><span class="line">               该 brokerAddrTable 变量中； 说明同一个 BrokerName 下面可以有多个不同</span><br><span class="line">               BrokerId 的 Broker 存在，表示一个 BrokerName 有多个 Broker 存在，通过</span><br><span class="line">               BrokerId 来区分主备</span><br><span class="line">               */</span><br><span class="line">              BrokerData brokerData = this.brokerAddrTable.get(brokerName);</span><br><span class="line">              if (null == brokerData) &#123;</span><br><span class="line">                  registerFirst = true;</span><br><span class="line">                  brokerData = new BrokerData(clusterName, brokerName, new HashMap&lt;Long, String&gt;());</span><br><span class="line">                  this.brokerAddrTable.put(brokerName, brokerData);</span><br><span class="line">              &#125;</span><br><span class="line">              String oldAddr = brokerData.getBrokerAddrs().put(brokerId, brokerAddr);</span><br><span class="line">              registerFirst = registerFirst || (null == oldAddr);</span><br><span class="line"></span><br><span class="line">              // 若 Broker 的注册请求消息中 topic 的配置不为空，并且该 Broker 是主用（即 brokerId=0）</span><br><span class="line">              if (null != topicConfigWrapper</span><br><span class="line">                  &amp;&amp; MixAll.MASTER_ID == brokerId) &#123;</span><br><span class="line">                  //则根据 NameServer 存储的 Broker 版本信息来判断是否需要更新 NameServer 端的 topic 配置信息</span><br><span class="line">                  if (this.isBrokerTopicConfigChanged(brokerAddr, topicConfigWrapper.getDataVersion())</span><br><span class="line">                      || registerFirst) &#123;</span><br><span class="line">                      ConcurrentMap&lt;String, TopicConfig&gt; tcTable =</span><br><span class="line">                          topicConfigWrapper.getTopicConfigTable();</span><br><span class="line">                      if (tcTable != null) &#123;</span><br><span class="line">                          for (Map.Entry&lt;String, TopicConfig&gt; entry : tcTable.entrySet()) &#123;</span><br><span class="line">                              this.createAndUpdateQueueData(brokerName, entry.getValue());</span><br><span class="line">                          &#125;</span><br><span class="line">                      &#125;</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">              //初始化 BrokerLiveInfo 对象并以 broker 地址为 key 值存入</span><br><span class="line">              // brokerLiveTable:HashMap&lt;String/* brokerAddr */, BrokerLiveInfo&gt;变量中</span><br><span class="line">              BrokerLiveInfo prevBrokerLiveInfo = this.brokerLiveTable.put(brokerAddr,</span><br><span class="line">                  new BrokerLiveInfo(</span><br><span class="line">                      System.currentTimeMillis(),</span><br><span class="line">                      topicConfigWrapper.getDataVersion(),</span><br><span class="line">                      channel,</span><br><span class="line">                      haServerAddr));</span><br><span class="line">              if (null == prevBrokerLiveInfo) &#123;</span><br><span class="line">                  log.info(&quot;new broker registered, &#123;&#125; HAServer: &#123;&#125;&quot;, brokerAddr, haServerAddr);</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">              //对于 filterServerList 不为空的， 以 broker 地址为 key 值存入</span><br><span class="line">              if (filterServerList != null) &#123;</span><br><span class="line">                  if (filterServerList.isEmpty()) &#123;</span><br><span class="line">                      this.filterServerTable.remove(brokerAddr);</span><br><span class="line">                  &#125; else &#123;</span><br><span class="line">                      this.filterServerTable.put(brokerAddr, filterServerList);</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125;</span><br><span class="line"></span><br><span class="line">              // 找到该 BrokerName 下面的主用 Broker（ BrokerId=0）</span><br><span class="line">              if (MixAll.MASTER_ID != brokerId) &#123;</span><br><span class="line">                  String masterAddr = brokerData.getBrokerAddrs().get(MixAll.MASTER_ID);</span><br><span class="line">                  if (masterAddr != null) &#123;</span><br><span class="line">                      ////主用 Broker 地址从brokerLiveTable 中获取 BrokerLiveInfo 对象，取该对象的 HaServerAddr 值</span><br><span class="line">                      BrokerLiveInfo brokerLiveInfo = this.brokerLiveTable.get(masterAddr);</span><br><span class="line">                      if (brokerLiveInfo != null) &#123;</span><br><span class="line">                          result.setHaServerAddr(brokerLiveInfo.getHaServerAddr());</span><br><span class="line">                          result.setMasterAddr(masterAddr);</span><br><span class="line">                      &#125;</span><br><span class="line">                  &#125;</span><br><span class="line">              &#125;</span><br><span class="line">          &#125; finally &#123;</span><br><span class="line">              this.lock.writeLock().unlock();</span><br><span class="line">          &#125;</span><br><span class="line">      &#125; catch (Exception e) &#123;</span><br><span class="line">          log.error(&quot;registerBroker Exception&quot;, e);</span><br><span class="line">      &#125;</span><br><span class="line"></span><br><span class="line">      return result;</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="4-根据Topic获取Broker信息和Topic配置信息"><a href="#4-根据Topic获取Broker信息和Topic配置信息" class="headerlink" title="4.根据Topic获取Broker信息和Topic配置信息"></a>4.根据Topic获取Broker信息和Topic配置信息</h1><p>接收到GET_ROUTEINTO_BY_TOPIC请求之后，间接调用了 RouteInfoManager.pickupTopicRouteData 方法来获取Broker和topic信息。</p>
+<p>1、获取 topic 配置信息，根据 topic 从 RouteInfoManager.topicQueueTable变量中获取 List队列， 赋值给返回对象 TopicRouteData 的QueueDatas 变量。 表示该 topic 对应的所有 topic 配置信息以及每个配置所属的 BrokerName。 </p>
+<p>2、 从上一步获取到的 List队列中获取 BrokerName 集合，该集合是去重之后的 BrokerName 集合，然后以该 BrokerName 集合的每个 BrokerName从 RouteInfoManager.brokerAddrTable 变量中获取 BrokerData 对象，将所有获取到的 BrokerData 对象集合赋值给返回对象 TopicRouteData 的 BrokerDatas集合变量。表示该 topic 是由哪些 Broker 提供的服务，以及每个 Broker 的名字、BrokerId、 IP 地址。 </p>
+<p>3、然后以“ ORDER_TOPIC_CONFIG”和请求消息中的 topic 值为参数从NamesrvController.kvConfigManager.configTable: HashMap变量中获取orderTopiconf 值（即 broker 的顺序），并赋值给TopicRouteData.orderTopicConf 变量；该 orderTopiconf 的参数格式为：以“ ;”解析成数组，数组的每个成员是以“ :”分隔的，构成数据 “ brokerName:queueNum”；最后将 TopicRouteData 对象返回给调用者.</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line">public TopicRouteData pickupTopicRouteData(final String topic) &#123;</span><br><span class="line">       TopicRouteData topicRouteData = new TopicRouteData();</span><br><span class="line">       boolean foundQueueData = false;</span><br><span class="line">       boolean foundBrokerData = false;</span><br><span class="line">       Set&lt;String&gt; brokerNameSet = new HashSet&lt;String&gt;();</span><br><span class="line">       List&lt;BrokerData&gt; brokerDataList = new LinkedList&lt;BrokerData&gt;();</span><br><span class="line">       topicRouteData.setBrokerDatas(brokerDataList);</span><br><span class="line"></span><br><span class="line">       HashMap&lt;String, List&lt;String&gt;&gt; filterServerMap = new HashMap&lt;String, List&lt;String&gt;&gt;();</span><br><span class="line">       topicRouteData.setFilterServerTable(filterServerMap);</span><br><span class="line"></span><br><span class="line">       try &#123;</span><br><span class="line">           try &#123;</span><br><span class="line">               this.lock.readLock().lockInterruptibly();</span><br><span class="line">               // 获取 topic 配置信息,表示该 topic 对应的所有 topic 配置信息以及每个配置所属的 BrokerName</span><br><span class="line">               List&lt;QueueData&gt; queueDataList = this.topicQueueTable.get(topic);</span><br><span class="line">               if (queueDataList != null) &#123;</span><br><span class="line">                   topicRouteData.setQueueDatas(queueDataList);</span><br><span class="line">                   foundQueueData = true;</span><br><span class="line"></span><br><span class="line">                   //从上一步获取到的 List队列中获取 BrokerName 集合，该集合是去重之后的 BrokerName 集合</span><br><span class="line">                   Iterator&lt;QueueData&gt; it = queueDataList.iterator();</span><br><span class="line">                   while (it.hasNext()) &#123;</span><br><span class="line">                       QueueData qd = it.next();</span><br><span class="line">                       brokerNameSet.add(qd.getBrokerName());</span><br><span class="line">                   &#125;</span><br><span class="line"></span><br><span class="line">                   //然后以该 BrokerName 集合的每个 BrokerName从 RouteInfoManager.brokerAddrTable</span><br><span class="line">                   //变量中获取 BrokerData 对象，将所有获取到的 BrokerData 对象集合赋值给返回对象 TopicRouteData 的 BrokerDatas集合变量</span><br><span class="line">                   for (String brokerName : brokerNameSet) &#123;</span><br><span class="line">                       BrokerData brokerData = this.brokerAddrTable.get(brokerName);</span><br><span class="line">                       if (null != brokerData) &#123;</span><br><span class="line">                           BrokerData brokerDataClone = new BrokerData(brokerData.getCluster(), brokerData.getBrokerName(), (HashMap&lt;Long, String&gt;) brokerData</span><br><span class="line">                               .getBrokerAddrs().clone());</span><br><span class="line">                           brokerDataList.add(brokerDataClone);</span><br><span class="line">                           foundBrokerData = true;</span><br><span class="line">                           //然后以“ ORDER_TOPIC_CONFIG”和请求消息中的 topic 值为参数从NamesrvController.kvConfigManager.configTable: HashMap变量中获取orderTopiconf 值（即 broker 的顺序），</span><br><span class="line">                           // 并赋值给TopicRouteData.orderTopicConf 变量；该 orderTopiconf 的参数格式为：以“ ;”解析成数组，数组的每个成员是以“ :”分隔的，</span><br><span class="line">                           // 构成数据 “ brokerName:queueNum”；最后将 TopicRouteData 对象返回给调用者</span><br><span class="line">                           for (final String brokerAddr : brokerDataClone.getBrokerAddrs().values()) &#123;</span><br><span class="line">                               List&lt;String&gt; filterServerList = this.filterServerTable.get(brokerAddr);</span><br><span class="line">                               filterServerMap.put(brokerAddr, filterServerList);</span><br><span class="line">                           &#125;</span><br><span class="line">                       &#125;</span><br><span class="line">                   &#125;</span><br><span class="line">               &#125;</span><br><span class="line">           &#125; finally &#123;</span><br><span class="line">               this.lock.readLock().unlock();</span><br><span class="line">           &#125;</span><br><span class="line">       &#125; catch (Exception e) &#123;</span><br><span class="line">           log.error(&quot;pickupTopicRouteData Exception&quot;, e);</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       log.debug(&quot;pickupTopicRouteData &#123;&#125; &#123;&#125;&quot;, topic, topicRouteData);</span><br><span class="line"></span><br><span class="line">       if (foundBrokerData &amp;&amp; foundQueueData) &#123;</span><br><span class="line">           return topicRouteData;</span><br><span class="line">       &#125;</span><br><span class="line"></span><br><span class="line">       return null;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+<h1 id="5-推荐"><a href="#5-推荐" class="headerlink" title="5.推荐"></a>5.推荐</h1><p>【1】<a href="https://blog.csdn.net/KilluaZoldyck/article/details/76828263" target="_blank" rel="noopener">RocketMQ源码深度解析二之Name Server篇</a></p>
+
+                
+<p class="pink-link-context">
+    <a href="/2018/09/09/RocketMQ系列07--消息存储/" rel="next" title="RocketMQ系列07--消息存储">
+    上一篇：RocketMQ系列07--消息存储
+  </a>
+</p>
+
+
+
+<p class="pink-link-context">
+    <a href="/2018/09/08/RocketMQ系列15--消息模式/" rel="next" title="RocketMQ系列15--消息模式">
+    下一篇：RocketMQ系列15--消息模式
+  </a>
+</p>
+
+
+            </div>
+			
+        </div>
+    </div>
+</article>
+
+
+
+
+
+
+</div>
+
+        <div class="fixed-action-btn float-sitemap">
+    <a class="btn-floating btn-large pink">
+      <i class="fa fa-caret-square-o-up"></i>
+    </a>
+    <ul>
+      <li><a class="btn-return-top btn-floating waves-effect green" title="回到顶部"><i class="fa fa-arrow-circle-o-up"></i></a></li>
+      <li><a class="btn-floating waves-effect button-collapse yellow darken-1"  data-activates="main-menu" title="菜单"><i class="fa fa-navicon"></i></a></li>
+    </ul>
+  </div>
+
+    </main>
+    <footer class="page-footer indigo darken-1">
+    
+    <div class="footer-container container">
+        <div class="row">
+            
+            <div class="social-group col m4 s12">
+                <h5 class="white-text">社交</h5>
+                
+                    <a class="social-link" href="https://weibo.com/u/3187854180" target="_blank">
+                        <i class="fa fa-2x fa-weibo"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://github.com/liqiaozi" target="_blank">
+                        <i class="fa fa-2x fa-github"></i>
+                    </a>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">
+                        <i class="fa fa-2x fa-rss"></i>
+                    </a>
+                
+                
+    <script async src="//dn-lbstatics.qbox.me/busuanzi/2.3/busuanzi.pure.mini.js">
+    </script>
+    <div class="site-visitors-container white-text">
+        <span>
+            <i class="fa fa-user"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_uv"></span>
+        </span>
+        <span>&nbsp;|&nbsp;</span>
+        <span>
+            <i class="fa fa-eye"></i>
+            <span class="busuanzi-value" id="busuanzi_value_site_pv"></span>
+        </span>
+    </div>
+
+
+            </div>
+            
+
+            
+            <div class="col m8 s12">
+                <h5 class="white-text">友情链接</h5>
+                
+                    <a class="social-link" href="https://www.jianshu.com/u/57d7ca829181" target="_blank">李乔子的酒(简书)</a>
+                
+                    <a class="social-link" href="https://blog.csdn.net/o135248" target="_blank">小李探花(CSDN)</a>
+                
+            </div>
+            
+        </div>
+    </div>
+    
+
+    <div class="footer-copyright pink-link-context">
+        <div class="container">
+            © 2018 liqiaozi.club, All rights reserved.
+            <p class="right" style="margin-top: 0;">本博客由 <a href="https://hexo.io">Hexo</a> </p>
+        </div>
+    </div>
+</footer>
+
+
+    <noscript>
+    <div class="noscript">
+        <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+    </div>
+</noscript>
+<div class="noscript">
+    <p class="center-align">当前网速较慢或者你使用的浏览器不支持博客特定功能，请尝试刷新或换用Chrome、Firefox等现代浏览器</p>
+</div>
+
+
+<script src="/js/jquery.min.js"></script>
+<script src="/js/materialize.min.js"></script>
+
+<script>
+    (function($) {
+        $(document).ready(function() {
+            // 隐藏禁用javascript（针对微信内置浏览器）的提示
+            $('.noscript').hide();
+
+            // 图片缩放效果
+            var $imgs = $('img').not('.slider-image').not('.avatar-image').not('.carousel-image').not('.card-cover-image').not('.qrcode');
+
+            // 给图片加上点击放大效果（materialbox插件）
+            $imgs.addClass('materialboxed').each(function(i, el) {
+                $(this).attr('data-caption', $(this).attr('alt') || ' ');
+            }).materialbox();
+
+            // 优化表格的显示
+            $('table').each(function() {
+                var $table = $(this);
+                // 除去多行代码的情况
+                if ($table.find('pre').length == 0) {
+                    $table.addClass('responsive-table striped bordered');
+                }
+            });
+
+            // 首页幻灯片
+            $('.slider').slider({indicators: true, full_width: true, interval: 8000});
+
+            $(".button-collapse").sideNav();
+            $(".category-menu").sideNav();
+
+            // 针对gallery post
+            $('.carousel').carousel({full_width: true});
+            $('.carousel-control.prev').click(function() {
+                $('.carousel').carousel('prev');
+            });
+            $('.carousel-control.next').click(function() {
+                $('.carousel').carousel('next');
+            });
+
+            // 文章目录
+            $('article').not('.simple-article').find('h1').add('h2').add('h3').add('h4').add('h5').add('h6').scrollSpy();
+
+            // 目录随屏幕滚动（防止目录过长越过footer）
+            var $toc = $('.toc');
+            var scrollTargetTop = 0;
+            $(window).scroll(function() {
+                var $activeLink = $toc.find('a.active.section');
+                if ($(window).scrollTop() < 100) {
+                    scrollTargetTop = 0;
+                } else {
+                    if ($activeLink[0]) {
+                        scrollTargetTop = $activeLink.offset().top - $toc.offset().top;
+                    }
+                }
+                $toc.css('top', '-' + scrollTargetTop + 'px');
+            });
+
+            // 修正文章目录的left-border颜色
+            var color = $('.table-of-contents-text').css('color');
+            $('.table-of-contents-link').css('border-left-color', color);
+
+            // 针对移动端做的优化：FAB按钮点击一下收回
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                $('.fixed-action-btn').addClass('click-to-toggle');
+            }
+            // 回到顶部
+            $('.btn-return-top').click(function() {
+                $('body, html').animate({
+                    scrollTop: 0
+                }, 500);
+            });
+
+            // 重置读书页面的Tab标签页的颜色
+            $('li.tab a').hover(function() {
+                $(this).toggleClass('text-lighten-4');
+            });
+            $('.indicator').addClass('pink lighten-2');
+
+            
+            // 添加new标签
+            $('.menu-reading, .menu-about').append('<span class="new badge pink"></span>');
+            
+
+            // 搜索功能
+            $('.modal-trigger').leanModal({
+                // 打开搜索框时自动聚焦
+                ready: function() {
+                    if ($('#search').is(":visible")) {
+                        $('#search-input').focus();
+                    }
+                }
+            });
+            var searchXml = "search.xml";
+            if (searchXml.length == 0) {
+             	searchXml = "search.xml";
+            }
+            var searchPath = "/" + searchXml;
+            initSearch(searchPath, 'search-input', 'search-result');
+        });
+
+        // 初始化搜索与匹配函数
+        var initSearch = function(path, search_id, content_id) {
+            'use strict';
+            $.ajax({
+                url: path,
+                dataType: "xml",
+                success: function(xmlResponse) {
+                    // get the contents from search data
+                    var datas = $("entry", xmlResponse).map(function() {
+                        return {
+                            title: $("title", this).text(),
+                            content: $("content", this).text(),
+                            url: $("url", this).text()
+                        };
+                    }).get();
+                    var $input = document.getElementById(search_id);
+                    var $resultContent = document.getElementById(content_id);
+                    $input.addEventListener('input', function() {
+                        var str = '<ul class=\"search-result-list\">';
+                        var keywords = this.value.trim().toLowerCase().split(/[\s\-]+/);
+                        $resultContent.innerHTML = "";
+                        if (this.value.trim().length <= 0) {
+                            return;
+                        }
+                        // perform local searching
+                        datas.forEach(function(data) {
+                            var isMatch = true;
+                            var content_index = [];
+                            var data_title = data.title.trim().toLowerCase();
+                            var data_content = data.content.trim().replace(/<[^>]+>/g, "").toLowerCase();
+                            var data_url = data.url;
+                            var index_title = -1;
+                            var index_content = -1;
+                            var first_occur = -1;
+                            // only match artiles with not empty titles and contents
+                            if (data_title != '' && data_content != '') {
+                                keywords.forEach(function(keyword, i) {
+                                    index_title = data_title.indexOf(keyword);
+                                    index_content = data_content.indexOf(keyword);
+                                    if (index_title < 0 && index_content < 0) {
+                                        isMatch = false;
+                                    } else {
+                                        if (index_content < 0) {
+                                            index_content = 0;
+                                        }
+                                        if (i == 0) {
+                                            first_occur = index_content;
+                                        }
+                                    }
+                                });
+                            }
+                            // show search results
+                            if (isMatch) {
+                                keywords.forEach(function(keyword) {
+                                    var regS = new RegExp(keyword, "gi");
+                                    data_title = data_title.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                });
+
+                                str += "<li><a href='" + data_url + "' class='search-result-title'>" + data_title + "</a>";
+                                var content = data.content.trim().replace(/<[^>]+>/g, "");
+                                if (first_occur >= 0) {
+                                    // cut out 100 characters
+                                    var start = first_occur - 20;
+                                    var end = first_occur + 80;
+                                    if (start < 0) {
+                                        start = 0;
+                                    }
+                                    if (start == 0) {
+                                        end = 100;
+                                    }
+                                    if (end > content.length) {
+                                        end = content.length;
+                                    }
+                                    var match_content = content.substring(start, end);
+                                    // highlight all keywords
+                                    keywords.forEach(function(keyword) {
+                                        var regS = new RegExp(keyword, "gi");
+                                        match_content = match_content.replace(regS, "<span class=\"search-keyword pink lighten-2\">" + keyword + "</span>");
+                                    });
+
+                                    str += "<p class=\"search-result\">..." + match_content + "...</p>"
+                                }
+                                str += "</li>";
+                            }
+                        });
+                        str += "</ul>";
+                        $resultContent.innerHTML = str;
+                    });
+                }
+            });
+        }
+    })(jQuery);
+</script>
+
+
+<script src="/js/prettify.js"></script>
+<script type="text/javascript">
+    $(document).ready(function() {
+        $("pre").addClass("prettyprint");
+        prettyPrint();
+    });
+</script>
+
+
+
+
+
+
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+});
+</script>
+<script type="text/javascript" async
+  src="//cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML">
+</script>
+
+
+
+</body>
+</html>
