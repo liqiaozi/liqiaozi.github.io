@@ -7,18 +7,17 @@
 
     
 
-    <title>RocketMQ系列16--Consumer重试策略 | 李乔子的酒</title>
+    <title>RocketMQ系列19--FilterServer机制及消息过滤 | 李乔子的酒</title>
     <meta name="author" content="liqiaozi">
     
-    <meta name="description" content="1.消息去重简介RocketMQ提供了消息重试机制,这时一些其他消息队列没有的功能.我们可以依靠这个优秀的机制,而不用在开发种增加更多的业务代码去实现。
-Consumer消费消息失败后，要提供一种重试机制，令消息再消费一次。Consumer消费消息失败通常可以认为有以下几种情况：
+    <meta name="description" content="0.前言RocketMQ的消息过滤方式有别于其他的消息中间件,是在过滤时,再做过滤,我们在前面介绍了Consume Queue存储结构。
 
-1.由于消息本身">
+(1)在Broker端进行Message Tag对比，先遍历Consume Queue,如果存储的Message Tag与订阅的MessageTag不符合，则跳">
     
     
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-    <meta property="og:title" content="RocketMQ系列16--Consumer重试策略"/>
+    <meta property="og:title" content="RocketMQ系列19--FilterServer机制及消息过滤"/>
     <meta property="og:site_name" content="Liqiaozi&#39;Blog"/>
 
     
@@ -244,12 +243,12 @@ Consumer消费消息失败后，要提供一种重试机制，令消息再消费
             <div class="article-title">
                 
     
-        <h1>RocketMQ系列16--Consumer重试策略</h1>
+        <h1>RocketMQ系列19--FilterServer机制及消息过滤</h1>
     
 
 
             </div>
-            <time class="pink-link-context" datetime="2018-09-08T16:00:00.000Z"><a href="/2018/09/09/RocketMQ系列16--Consumer重试策略/">2018-09-09</a></time>
+            <time class="pink-link-context" datetime="2018-09-08T16:00:00.000Z"><a href="/2018/09/09/RocketMQ系列19--FilterServer机制及消息过滤/">2018-09-09</a></time>
 
             <span id="busuanzi_container_page_pv" class="read-times-container">
     <i class="fa fa-eye"></i>
@@ -261,67 +260,62 @@ Consumer消费消息失败后，要提供一种重试机制，令消息再消费
         
             <a href="/tags/rocketmq/" class="chip pink lighten-1">rocketmq</a>
         
-            <a href="/tags/重试/" class="chip pink lighten-1">重试</a>
+            <a href="/tags/消息过滤/" class="chip pink lighten-1">消息过滤</a>
+        
+            <a href="/tags/filter/" class="chip pink lighten-1">filter</a>
         
     </div>
 
 
             <div class="toc pink-link-context hide-on-med-and-down">
-    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-消息去重简介"><span class="section table-of-contents-text">1.消息去重简介</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-消息重试分类"><span class="section table-of-contents-text">2.消息重试分类</span></a><ol class="section table-of-contents-child"><li class="section table-of-contents-item section table-of-contents-level-2"><a class="section table-of-contents-link" href="#2-1-producer端"><span class="section table-of-contents-text">2.1 producer端</span></a></li><li class="section table-of-contents-item section table-of-contents-level-2"><a class="section table-of-contents-link" href="#2-2-consumer端"><span class="section table-of-contents-text">2.2 consumer端</span></a><ol class="section table-of-contents-child"><li class="section table-of-contents-item section table-of-contents-level-3"><a class="section table-of-contents-link" href="#exception"><span class="section table-of-contents-text">exception</span></a></li><li class="section table-of-contents-item section table-of-contents-level-3"><a class="section table-of-contents-link" href="#timeout"><span class="section table-of-contents-text">timeout</span></a></li></ol></li></ol></li></ol>
+    <ol class="section table-of-contents"><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#0-前言"><span class="section table-of-contents-text">0.前言</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#1-简单消息过滤"><span class="section table-of-contents-text">1.简单消息过滤</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#2-高级消息过滤"><span class="section table-of-contents-text">2.高级消息过滤</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#3-配置"><span class="section table-of-contents-text">3.配置</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#4-producer端"><span class="section table-of-contents-text">4.producer端</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#5-自定义过滤器MyMessageFilter"><span class="section table-of-contents-text">5.自定义过滤器MyMessageFilter</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#6-consumer端"><span class="section table-of-contents-text">6.consumer端</span></a></li><li class="section table-of-contents-item section table-of-contents-level-1"><a class="section table-of-contents-link" href="#7-推荐"><span class="section table-of-contents-text">7.推荐</span></a></li></ol>
 </div>
 
 
             <div class="entry pink-link-context">
-                <h1 id="1-消息去重简介"><a href="#1-消息去重简介" class="headerlink" title="1.消息去重简介"></a>1.消息去重简介</h1><p>RocketMQ提供了消息重试机制,这时一些其他消息队列没有的功能.我们可以依靠这个优秀的机制,而不用在开发种增加更多的业务代码去实现。</p>
-<p>Consumer消费消息失败后，要提供一种重试机制，令消息再消费一次。Consumer消费消息失败通常可以认为有以下几种情况：</p>
-<ul>
-<li>1.由于消息本身的原因，例如反序列化失败，消息数据本身无法处理（例如充话费，当前手机号被注销，无法充值）等；</li>
-</ul>
-<p>这种错误通常需要跳过这条消息，再消费其他消息，而这条失败的消息即使立刻重试消费，99%也不成功，所以最好提供一种定时重试策略，即过10s后在重试。</p>
-<ul>
-<li>2.由于依赖的下游应用服务不可用，例如db链接不可用，外网不可达等。</li>
-</ul>
-<p>遇到这种错误，即使跳过当前的失败的消息，消费其他消息同样也会报错，这种情况建议应用sleep 30s,再消费吓一跳消息，这样可以减轻Broker重试消息的压力。</p>
-<h1 id="2-消息重试分类"><a href="#2-消息重试分类" class="headerlink" title="2.消息重试分类"></a>2.消息重试分类</h1><p>对于MQ，可能存在各种异常和情况，导致消息无法最终被consumer消费，因此就有了消息失败重试机制。很显然，消息重试分为2种：Producer端重试和Consumer端重试。</p>
-<h2 id="2-1-producer端"><a href="#2-1-producer端" class="headerlink" title="2.1 producer端"></a>2.1 producer端</h2><p>生产端的消息失败，也就是Producer往MQ上发消息没有发送成功，比如网络抖动导致生产者发送消息到MQ失败。这种消息失败重试我们可以手动设置发送失败重试次数，代码如下：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">	//发送失败重试次数</span><br><span class="line">	producer.setRetryTimesWhenSendFailed(3);</span><br><span class="line">	...</span><br><span class="line">// 3s内没有发送成功,即重试发送.</span><br><span class="line">   SendResult sendResult = producer.send(msg,3000);</span><br></pre></td></tr></table></figure></p>
-<p>send（）方法内部重试逻辑：</p>
-<ol>
-<li>至多重试设置的重试的次数，默认为3次；</li>
-<li>如果发送失败，则轮转到下一个broker;</li>
-<li>这个方法的总耗时事件不超过sendMsgTimeout设置的值，默认为10s。</li>
-</ol>
-<p>所以，如果本身向broker发送消息产生超时异常，就不会再做重试。</p>
-<p>以上策略仍然不能保证消息一定发送成功，为保证消息一定成功，建议这样做：<br>如果调用send同步方法发送消息失败，则尝试将消息存储到db中，有后台线程定时重试，保证消息一定到达broker.</p>
-<h2 id="2-2-consumer端"><a href="#2-2-consumer端" class="headerlink" title="2.2 consumer端"></a>2.2 consumer端</h2><p>消费端消费失败的情况分为2种：exception 和 timeout。</p>
-<h3 id="exception"><a href="#exception" class="headerlink" title="exception"></a>exception</h3><p>消息正常到达了消费端，结果消费者发生了异常，处理失败了。（发序列化失败，消息本身无法处理等）。</p>
-<p>我们可以带着问题去找答案：</p>
+                <h1 id="0-前言"><a href="#0-前言" class="headerlink" title="0.前言"></a>0.前言</h1><p>RocketMQ的消息过滤方式有别于其他的消息中间件,是在过滤时,再做过滤,我们在前面介绍了Consume Queue存储结构。</p>
+<p><img src="https://upload-images.jianshu.io/upload_images/11560519-85286e339278a139.png" alt=""></p>
+<p>(1)在Broker端进行Message Tag对比，先遍历Consume Queue,如果存储的Message Tag与订阅的MessageTag不符合，则跳过，继续比对下一个，符合的话则传送给我Consumer.(Message Tag是字符串形式，Consume Queue中存储的是其对应的hashcode，比对时也是比对hashcode)</p>
+<p>(2)Consumer收到过滤后的消息后，同样也要执行在Broker端的操作，但是比对的是真是的Message Tag字符串，而不是HashCode.</p>
+<p><strong>为什么过滤要这样做？</strong></p>
+<p>(1). Message Tag 存储 Hashcode，是为了在Consume Queue定长方式存储，节约空间。</p>
+<p>(2). 过滤过程中不会访问 Commit Log 数据，可以保证堆积情况下也能高效过滤。</p>
+<p>(3). 即使存在 Hash 冲突，也可以在 Consumer 端进行修正，保证万无一失。</p>
+<h1 id="1-简单消息过滤"><a href="#1-简单消息过滤" class="headerlink" title="1.简单消息过滤"></a>1.简单消息过滤</h1><p>在Cnsumer端指定订阅的Tag。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">//订阅挃定topic下tags分别等亍TagA戒TagC戒TagD</span><br><span class="line"></span><br><span class="line">consumer.subscribe(&quot;TopicTest1&quot;, &quot;TagA || TagC || TagD&quot;);</span><br></pre></td></tr></table></figure>
+<p>简单消息过滤通过指定多个 Tag 来过滤消息，过滤动作在服务器端进行。</p>
+<h1 id="2-高级消息过滤"><a href="#2-高级消息过滤" class="headerlink" title="2.高级消息过滤"></a>2.高级消息过滤</h1><p><img src="https://upload-images.jianshu.io/upload_images/11560519-bb6a4357d185afb0.png" alt=""></p>
+<p>RocketMQ 执行过滤是在Broker端，Broker所在的机器会启动多个FilterServer过滤进程；Consumer启动后，会向FilterServer上传一个过滤的Java类；Consumer从FilterServer拉消息，FilterServer将请求转发给Broker,FilterServer从Broker收到消息后，按照Consumer上传的Java过滤程序做过滤，过滤完后返回给Consumer.这种过滤方法可以节省网络流量，但是增加了Broker的负担。</p>
+<p>1.Broker 所在的机器会启动多个 FilterServer 过滤进程；</p>
+<p>2.Consumer 启动后，会向 FilterServer 上传一个过滤的 Java 类；</p>
+<p>3.Consumer 从 FilterServer拉消息，FilterServer将请求转给Broker，FilterServer 从 Broker 收到消息后，按照Consumer上传的Java过滤程序做过滤，过滤完成后返回给 Consumer。</p>
+<h1 id="3-配置"><a href="#3-配置" class="headerlink" title="3.配置"></a>3.配置</h1><p>如果我们要使用RocketMQ的Filter组件，则必须启动 mqfiletersrv。<br>组件启动顺序：namesrv broker mqfiltersrv.</p>
+<p>mqfiletersrv启动命令：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">nohup sh mqfiltersrv -c broker.properties</span><br></pre></td></tr></table></figure></p>
+<p>在 broker.properties配置文件添加配置:<br>数量根据自己机器的情况，自行设定。<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">filterServerNums=1</span><br></pre></td></tr></table></figure></p>
+<p>代码层：需要实现 MessageFilter接口，进行重写match()方法，可以针对我们自己想要过滤的消息进行细粒度的处理；</p>
+<p>最后，把我们自己实现的Filter类（类中不允许有中文！！！），通过消费端的订阅方式，加入到我们的消费端即可。</p>
+<h1 id="4-producer端"><a href="#4-producer端" class="headerlink" title="4.producer端"></a>4.producer端</h1><p>我们可以在 producer的代码中加入 自定义的过滤的标志：</p>
+<p>部分代码：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">// 发送消息.</span><br><span class="line">       for (int i = 0; i &lt; 100; i++) &#123;</span><br><span class="line">           try &#123;</span><br><span class="line"></span><br><span class="line">               Message msg = new Message(&quot;DingDing_Topic&quot;, // topic</span><br><span class="line">                       &quot;sign_up&quot;,                           // tags</span><br><span class="line">                       (&quot;员工&quot; + i + &quot;签到&quot;).getBytes());        // body</span><br><span class="line"></span><br><span class="line">               msg.putUserProperty(&quot;SequenceId&quot;, String.valueOf(i));//设置过了参数</span><br><span class="line">               </span><br><span class="line">               // 3s内没有发送成功,即重试发送.</span><br><span class="line">               SendResult sendResult = producer.send(msg,3000);</span><br><span class="line">               log.info(&quot;发送结果:&quot; + sendResult);</span><br><span class="line">           &#125;</span><br><span class="line">           catch (Exception e) &#123;</span><br><span class="line">               e.printStackTrace();</span><br><span class="line">               Thread.sleep(1000);</span><br><span class="line">           &#125;</span><br><span class="line">       &#125;</span><br></pre></td></tr></table></figure></p>
 <blockquote>
-<p>消费者消费消息的状态有哪些？<br>如果消费失败，mq采用什么策略进行重试？<br>假设10条试拒中，某一条消息消费失败，是消息重试这10条消息呢？还是只是重试失败的某一条？<br>再重试的过程中，需要保证不重复消费吗？</p>
+<p><strong>msg.putUserProperty(“SequenceId”, String.valueOf(i))中的key和Filter文件中的要key要一致。</strong></p>
 </blockquote>
-<p>消息消费的状态：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">public enum ConsumeConcurrentlyStatus &#123;</span><br><span class="line">    /**</span><br><span class="line">     * 消费成功.</span><br><span class="line">     */</span><br><span class="line">    CONSUME_SUCCESS,</span><br><span class="line">    /**</span><br><span class="line">     * 消费失败,稍后重试消费.</span><br><span class="line">     */</span><br><span class="line">    RECONSUME_LATER;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>查看broker的启动日志：</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">2018-08-28 22:14:12 INFO main - messageDelayLevel=1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h</span><br><span class="line">2018-08-28 22:14:12 INFO main - flushDelayOffsetInterval=10000</span><br><span class="line">2018-08-28 22:14:12 INFO main - cleanFileForciblyEnable=true</span><br><span class="line">2018-08-28 22:14:28 INFO main - user specfied name server address: rocketmq-nameserv1:9876;rocketmq-nameserv2:9876</span><br></pre></td></tr></table></figure>
-<p>可以看到消息失败重试的策略：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2018-08-28 22:14:12 INFO main - messageDelayLevel=1s 5s 10s 30s 1m 2m 3m 4m 5m 6m 7m 8m 9m 10m 20m 30m 1h 2h</span><br></pre></td></tr></table></figure></p>
-<p>直到2个小时候消费还是失败，那么这条消息就会终止发送给消费者了。再实际中，我们并不会允许这么多次消费的，这样做很浪费资源，我们会把这条消息存储到db中，手动消费。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">	catch (UnsupportedEncodingException e) &#123;</span><br><span class="line">    e.printStackTrace();</span><br><span class="line">    if (msgs.get(0).getReconsumeTimes() == 3) &#123;</span><br><span class="line">        // 该条消息可以存储到DB或者LOG日志中，或其他处理方式</span><br><span class="line">        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;// 成功</span><br><span class="line">    &#125; else &#123;</span><br><span class="line">        return ConsumeConcurrentlyStatus.RECONSUME_LATER;// 重试</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<h3 id="timeout"><a href="#timeout" class="headerlink" title="timeout"></a>timeout</h3><p>由于网络原因导致消息压根就没从MQ到消费者上，那么RocketMQ内部会不断的尝试发送这条消息，直至发送成功为止.(集群中的一个broker失败，就尝试另外一个broker)。延续exception的思路，也就是消费者端没有返回消息的消费状态，无论是消费成功还是稍后重试。这样producer端就认为消息还是没有到达消费者端。</p>
-<p>场景模拟：<br>(1) 同在一个消费者组的2个消费者：consumer1和consumer2;<br>(2) consumer1的业务代码中暂停1分钟，并且不发送状态给MQ。</p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">consumer.registerMessageListener(new MessageListenerConcurrently() &#123;</span><br><span class="line">@Override</span><br><span class="line">public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context) &#123;</span><br><span class="line">    try &#123;                   </span><br><span class="line">            String topic = msg.getTopic();</span><br><span class="line">            String msgBody = new String(msg.getBody(),&quot;utf-8&quot;);</span><br><span class="line">            String tags = msg.getTags();</span><br><span class="line">            System.out.println(&quot;收到消息：&quot; + &quot; topic：&quot; + topic + &quot; ,tags：&quot; + tags + &quot; ,msg：&quot; + msgBody);</span><br><span class="line"></span><br><span class="line">            // 表示业务处理时间</span><br><span class="line">            System.out.println(&quot;=========开始暂停==========&quot;);</span><br><span class="line">            Thread.sleep(60000);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125; catch (Exception e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">        return ConsumeConcurrentlyStatus.RECONSUME_LATER;// 重试</span><br><span class="line">    &#125;</span><br><span class="line">    return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;</span><br><span class="line">&#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
-<p>(3)先启动consumer1，再启动producer,发送一条消息。<br>(4)发现consumer1接收到了消息，但是因为consumer阻塞，没有返回消息消费的状态；<br>(5)紧接着，启动consumer2，发现consumer接收到了消息，并且消费了消息返回了消费状态。</p>
+<h1 id="5-自定义过滤器MyMessageFilter"><a href="#5-自定义过滤器MyMessageFilter" class="headerlink" title="5.自定义过滤器MyMessageFilter"></a>5.自定义过滤器MyMessageFilter</h1><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">/**</span><br><span class="line"> * @ClassName: MyMessageFilter</span><br><span class="line"> * @Description: 自定义消息过滤器</span><br><span class="line"> * @Author: 李雪飞</span><br><span class="line"> * @Date: 2018/9/10 12:00</span><br><span class="line"> * @Vserion 1.0</span><br><span class="line"> **/</span><br><span class="line">public class MyMessageFilter implements MessageFilter &#123;</span><br><span class="line"></span><br><span class="line">    // no Chinese anyway</span><br><span class="line">    @Override</span><br><span class="line">    public boolean match(MessageExt msg) &#123;</span><br><span class="line">        String property = msg.getUserProperty(&quot;SequenceId&quot;);</span><br><span class="line">        if (property != null) &#123;</span><br><span class="line">            int id = Integer.parseInt(property);</span><br><span class="line">            if((id % 2) == 0) &#123;</span><br><span class="line">                return true;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        return false;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>内容上不得有任何中文，包括注释，否则MixAll.file2String方法返回null.<br>msg.putUserProperty(“SequenceId”, String.valueOf(i))中的key和Filter文件中的要key要一致</p>
+<h1 id="6-consumer端"><a href="#6-consumer端" class="headerlink" title="6.consumer端"></a>6.consumer端</h1><p>consumer代码片段：<br><figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"> InputStream insss =new Consumer().getClass().getResourceAsStream(&quot;/application.properties&quot;);</span><br><span class="line">        Properties pss = new Properties();</span><br><span class="line">        try &#123;</span><br><span class="line">            pss.load(insss);</span><br><span class="line">        &#125; catch (IOException e) &#123;</span><br><span class="line">            // TODO Auto-generated catch block</span><br><span class="line">            e.printStackTrace();</span><br><span class="line">        &#125;</span><br><span class="line">        String devPath=(String)pss.get(&quot;dev.path&quot;);</span><br><span class="line"></span><br><span class="line">//		String filterCode = MixAll.file2String(&quot;H:\\idea_workspace\\ssm_project\\src\\main\\java\\com\\xflig\\rocketmq\\helloworld\\MyMessageFilter.java&quot;);</span><br><span class="line">        String filterCode = MixAll.file2String(devPath+&quot;MyMessageFilter.java&quot;);</span><br></pre></td></tr></table></figure></p>
+<h1 id="7-推荐"><a href="#7-推荐" class="headerlink" title="7.推荐"></a>7.推荐</h1><p>【1】<a href="https://blog.csdn.net/prestigeding/article/details/79255328" target="_blank" rel="noopener">源码分析RocketMQ消息过滤机制上篇—–消息消费服务端过滤与TAG模式过滤实现</a><br>【2】</p>
 
                 
 <p class="pink-link-context">
-    <a href="/2018/09/09/RocketMQ系列17--Consumer幂等去重/" rel="next" title="RocketMQ系列17--Consumer幂等去重">
-    上一篇：RocketMQ系列17--Consumer幂等去重
+    <a href="/2018/09/09/RocketMQ系列08--NameServer/" rel="next" title="RocketMQ系列08--Namersrv">
+    上一篇：RocketMQ系列08--Namersrv
   </a>
 </p>
 
 
 
 <p class="pink-link-context">
-    <a href="/2018/09/09/RocketMQ系列07--消息存储/" rel="next" title="RocketMQ系列07--消息存储">
-    下一篇：RocketMQ系列07--消息存储
+    <a href="/2018/09/09/RocketMQ系列17--Consumer幂等去重/" rel="next" title="RocketMQ系列17--Consumer幂等去重">
+    下一篇：RocketMQ系列17--Consumer幂等去重
   </a>
 </p>
 
